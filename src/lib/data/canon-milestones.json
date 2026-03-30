@@ -1,0 +1,72 @@
+[
+  {
+    "id": "DEATH_NOTE_DISCOVERY",
+    "label": "Light finds the notebook",
+    "window": {
+      "dayMin": 1,
+      "dayMax": 1,
+      "blocks": ["morning", "afternoon", "night"]
+    },
+    "requiredFlags": ["found_notebook"],
+    "onFail": {
+      "fracture": true,
+      "reason": "Notebook discovery timing diverged from canon."
+    }
+  },
+  {
+    "id": "FIRST_EXECUTION_CONFIRMED",
+    "label": "Light confirms notebook execution",
+    "window": {
+      "dayMin": 1,
+      "dayMax": 3,
+      "blocks": ["morning", "afternoon", "night"]
+    },
+    "requiredFlags": ["first_execution_done"],
+    "onFail": {
+      "fracture": true,
+      "reason": "The first execution confirmation did not happen in canon order."
+    }
+  },
+  {
+    "id": "RAYE_PENBER_INCIDENT",
+    "label": "Raye Penber incident executed",
+    "window": {
+      "dayMin": 6,
+      "dayMax": 20,
+      "blocks": ["morning", "afternoon", "night"]
+    },
+    "requiredFlags": ["raye_identified", "raye_controlled", "raye_executed"],
+    "onFail": {
+      "fracture": true,
+      "reason": "Raye Penber event failed and canon timeline fractured."
+    }
+  },
+  {
+    "id": "L_DEATH_EVENT",
+    "label": "Rem kills L to protect Misa",
+    "window": {
+      "dayMin": 8,
+      "dayMax": 45,
+      "blocks": ["morning", "afternoon", "night"]
+    },
+    "requiredFlags": ["l_dead", "rem_dead"],
+    "onFail": {
+      "fracture": true,
+      "reason": "L's death event failed and canon succession cannot occur."
+    }
+  },
+  {
+    "id": "YELLOW_BOX_CONFRONTATION",
+    "label": "Near exposes Light in Yellow Box",
+    "window": {
+      "dayMin": 12,
+      "dayMax": 120,
+      "blocks": ["morning", "afternoon", "night"]
+    },
+    "requiredFlags": ["yellow_box_triggered"],
+    "onFail": {
+      "fracture": true,
+      "reason": "Final confrontation diverged before Light's canon downfall."
+    }
+  }
+]

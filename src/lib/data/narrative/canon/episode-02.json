@@ -1,0 +1,132 @@
+{
+  "meta": {
+    "id": "canon-episode-02",
+    "version": 1,
+    "mode": "anime-canon",
+    "startNodeId": "canon2_open_001"
+  },
+  "nodes": {
+    "canon2_open_001": {
+      "id": "canon2_open_001",
+      "type": "scene",
+      "speaker": "l",
+      "portrait": "l_neutral",
+      "location": "taskforce_hq",
+      "text": [
+        "Kira needs a name and a face.",
+        "So we control what Kira sees next."
+      ],
+      "next": "canon2_milestone_001"
+    },
+    "canon2_milestone_001": {
+      "id": "canon2_milestone_001",
+      "type": "choice",
+      "speaker": "system",
+      "location": "train_line",
+      "text": [
+        "Raye Penber operation in progress.",
+        "Build the setup, then execute in the correct timing window."
+      ],
+      "canon": {
+        "milestoneId": "RAYE_PENBER_INCIDENT",
+        "deadline": { "day": 14, "block": "night" },
+        "failureNodeId": "canon2_failure_001"
+      },
+      "choices": [
+        {
+          "id": "track_fbi_pattern",
+          "label": "Track FBI movement and identify Raye",
+          "requirements": [
+            { "type": "flag.is", "key": "raye_identified", "value": false }
+          ],
+          "effects": [
+            { "type": "flag.set", "key": "raye_identified", "value": true },
+            { "type": "stat.add", "path": "stats.intel", "value": 2 },
+            { "type": "suspicion.add", "value": 1, "reason": "intel_activity_spike" },
+            { "type": "time.advance", "blocks": 1 }
+          ],
+          "next": "canon2_milestone_001"
+        },
+        {
+          "id": "prepare_bus_script",
+          "label": "Prepare bus-jacking control script",
+          "requirements": [
+            { "type": "flag.is", "key": "raye_identified", "value": true },
+            { "type": "flag.is", "key": "raye_controlled", "value": false }
+          ],
+          "effects": [
+            { "type": "flag.set", "key": "raye_controlled", "value": true },
+            { "type": "stat.add", "path": "stats.stress", "value": 2 },
+            { "type": "suspicion.add", "value": 2, "reason": "execution_pattern" },
+            { "type": "time.advance", "blocks": 1 }
+          ],
+          "next": "canon2_milestone_001"
+        },
+        {
+          "id": "execute_raye",
+          "label": "Trigger the incident exactly on schedule",
+          "requirements": [
+            { "type": "flag.is", "key": "raye_identified", "value": true },
+            { "type": "flag.is", "key": "raye_controlled", "value": true },
+            {
+              "type": "time.window",
+              "dayMin": 10,
+              "dayMax": 14,
+              "blocks": ["morning", "afternoon", "night"]
+            }
+          ],
+          "effects": [
+            { "type": "flag.set", "key": "raye_executed", "value": true },
+            { "type": "milestone.complete", "milestoneId": "RAYE_PENBER_INCIDENT" },
+            { "type": "time.advance", "blocks": 1 }
+          ],
+          "next": "canon2_clear_001"
+        },
+        {
+          "id": "maintain_cover",
+          "label": "Maintain cover and wait",
+          "effects": [
+            { "type": "stat.add", "path": "stats.alibi", "value": 2 },
+            { "type": "suspicion.add", "value": -1, "reason": "family_cover" },
+            { "type": "time.advance", "blocks": 1 }
+          ],
+          "next": "canon2_milestone_001"
+        },
+        {
+          "id": "miss_window",
+          "label": "Abandon operation (canon fail)",
+          "effects": [
+            {
+              "type": "gameover.trigger",
+              "reason": "canon-failure",
+              "detail": "Raye Penber milestone was missed."
+            }
+          ],
+          "next": "canon2_failure_001"
+        }
+      ]
+    },
+    "canon2_clear_001": {
+      "id": "canon2_clear_001",
+      "type": "system",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "Raye Penber operation complete.",
+        "L closes in while Misa Amane enters the board as Second Kira."
+      ],
+      "next": null
+    },
+    "canon2_failure_001": {
+      "id": "canon2_failure_001",
+      "type": "system",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "Canon puzzle failed.",
+        "You reached a non-canon branch endpoint."
+      ],
+      "next": null
+    }
+  }
+}

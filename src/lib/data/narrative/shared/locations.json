@@ -1,0 +1,26 @@
+[
+  {
+    "id": "light_bedroom",
+    "name": "Light's Bedroom",
+    "music": "room_loop",
+    "background": "bg_light_room_day"
+  },
+  {
+    "id": "school_courtyard",
+    "name": "School Courtyard",
+    "music": "school_loop",
+    "background": "bg_school_courtyard"
+  },
+  {
+    "id": "taskforce_hq",
+    "name": "Task Force HQ",
+    "music": "investigation_loop",
+    "background": "bg_taskforce_room"
+  },
+  {
+    "id": "train_line",
+    "name": "Subway Line",
+    "music": "tense_train_loop",
+    "background": "bg_subway_car"
+  }
+]

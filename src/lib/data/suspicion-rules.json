@@ -1,0 +1,17 @@
+{
+  "baseDecayPerBlock": 1.4,
+  "minMeter": 0,
+  "maxMeter": 100,
+  "thresholds": {
+    "watchlist": 35,
+    "activeInvestigation": 65,
+    "captureRisk": 85
+  },
+  "weights": {
+    "intelSpike": 1.05,
+    "executionPattern": 1.45,
+    "normalRoutine": -0.9,
+    "socialCover": -1.2,
+    "mistakePenalty": 1.6
+  }
+}

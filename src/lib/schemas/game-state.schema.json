@@ -1,0 +1,189 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "game-state.schema.json",
+  "title": "Death Note Game State",
+  "type": "object",
+  "required": [
+    "version",
+    "seed",
+    "mode",
+    "phase",
+    "clock",
+    "stats",
+    "suspicion",
+    "actionEconomy",
+    "inventory",
+    "relationships",
+    "flags",
+    "narrative",
+    "canon",
+    "log",
+    "gameOver"
+  ],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "seed": { "type": "string" },
+    "mode": { "type": "string", "enum": ["anime-canon", "divergent"] },
+    "phase": { "type": "string", "enum": ["title", "playing", "paused", "ending", "game-over"] },
+    "clock": {
+      "type": "object",
+      "required": ["day", "week", "month", "year", "block", "totalBlocksElapsed"],
+      "properties": {
+        "day": { "type": "integer", "minimum": 1 },
+        "week": { "type": "integer", "minimum": 1 },
+        "month": { "type": "integer", "minimum": 1, "maximum": 12 },
+        "year": { "type": "integer", "minimum": 1 },
+        "block": { "type": "string", "enum": ["morning", "afternoon", "night"] },
+        "totalBlocksElapsed": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "stats": {
+      "type": "object",
+      "required": ["alibi", "intel", "morality", "stress"],
+      "properties": {
+        "alibi": { "type": "number" },
+        "intel": { "type": "number" },
+        "morality": { "type": "number", "minimum": -100, "maximum": 100 },
+        "stress": { "type": "number", "minimum": 0, "maximum": 100 }
+      },
+      "additionalProperties": false
+    },
+    "suspicion": {
+      "type": "object",
+      "required": ["meter", "trend", "breakdown"],
+      "properties": {
+        "meter": { "type": "number", "minimum": 0, "maximum": 100 },
+        "trend": { "type": "number" },
+        "breakdown": {
+          "type": "object",
+          "required": ["patternRisk", "socialCover", "policeHeat", "mistakes"],
+          "properties": {
+            "patternRisk": { "type": "number" },
+            "socialCover": { "type": "number" },
+            "policeHeat": { "type": "number" },
+            "mistakes": { "type": "number" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "actionEconomy": {
+      "type": "object",
+      "required": ["actionsPerBlock", "actionsRemaining"],
+      "properties": {
+        "actionsPerBlock": { "type": "integer", "minimum": 1 },
+        "actionsRemaining": { "type": "integer", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "inventory": {
+      "type": "object",
+      "required": ["notebookPages", "hasShinigamiEyes", "money"],
+      "properties": {
+        "notebookPages": { "type": "integer", "minimum": 0 },
+        "hasShinigamiEyes": { "type": "boolean" },
+        "money": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+    "relationships": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "required": ["trust", "suspicion", "affinity"],
+        "properties": {
+          "trust": { "type": "number", "minimum": -100, "maximum": 100 },
+          "suspicion": { "type": "number", "minimum": 0, "maximum": 100 },
+          "affinity": { "type": "number", "minimum": -100, "maximum": 100 }
+        },
+        "additionalProperties": false
+      }
+    },
+    "flags": {
+      "type": "object",
+      "additionalProperties": {
+        "type": ["boolean", "number", "string"]
+      }
+    },
+    "narrative": {
+      "type": "object",
+      "required": ["activeTreeId", "currentNodeId", "seenNodeIds", "choiceHistory", "eventQueue"],
+      "properties": {
+        "activeTreeId": { "type": "string" },
+        "currentNodeId": { "type": "string" },
+        "seenNodeIds": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "choiceHistory": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["nodeId", "choiceId", "day", "block"],
+            "properties": {
+              "nodeId": { "type": "string" },
+              "choiceId": { "type": "string" },
+              "day": { "type": "integer", "minimum": 1 },
+              "block": { "type": "string", "enum": ["morning", "afternoon", "night"] }
+            },
+            "additionalProperties": false
+          }
+        },
+        "eventQueue": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      },
+      "additionalProperties": false
+    },
+    "canon": {
+      "type": "object",
+      "required": ["fractured", "activeMilestoneId", "milestoneState", "failureReason"],
+      "properties": {
+        "fractured": { "type": "boolean" },
+        "activeMilestoneId": { "type": ["string", "null"] },
+        "milestoneState": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "enum": ["locked", "active", "completed", "failed"]
+          }
+        },
+        "failureReason": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "log": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "kind", "text", "day", "block"],
+        "properties": {
+          "id": { "type": "string" },
+          "kind": { "type": "string", "enum": ["system", "action", "story"] },
+          "text": { "type": "string" },
+          "day": { "type": "integer", "minimum": 1 },
+          "block": { "type": "string", "enum": ["morning", "afternoon", "night"] }
+        },
+        "additionalProperties": false
+      }
+    },
+    "gameOver": {
+      "type": ["object", "null"],
+      "required": ["reason", "day", "block"],
+      "properties": {
+        "reason": {
+          "type": "string",
+          "enum": ["suspicion-max", "canon-failure", "captured", "ending"]
+        },
+        "detail": { "type": "string" },
+        "day": { "type": "integer", "minimum": 1 },
+        "block": { "type": "string", "enum": ["morning", "afternoon", "night"] }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,33 @@
+:root {
+  --screen-base-w: 240;
+  --screen-base-h: 160;
+
+  /* Death Note Ink  */
+  --ink-900: #050508;
+  --ink-800: #0a0a10;
+  --ink-700: #12101a;
+
+  /* Blood reds */
+  --blood-600: #5a1515;
+  --blood-500: #8b1a1a;
+  --blood-400: #cc0000;
+
+  /* Greys */
+  --steel-400: #706868;
+  --steel-300: #a09090;
+  --steel-200: #c0b0b0;
+  --steel-100: #e0d8d8;
+
+  /* Accent blues */
+  --eye-500: #4a8db5;
+  --eye-400: #6ab0d8;
+
+  /* Accent gold */
+  --ryuk-500: #c4a44a;
+  --ryuk-400: #dac060;
+
+  /* State colors */
+  --success: #5cb85c;
+  --danger: #e04040;
+  --warning: #c4a44a;
+}

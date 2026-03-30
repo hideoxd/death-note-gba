@@ -1,0 +1,310 @@
+{
+  "meta": {
+    "id": "canon-episode-03",
+    "version": 1,
+    "mode": "anime-canon",
+    "startNodeId": "canon3_misa_intro_001"
+  },
+  "nodes": {
+    "canon3_misa_intro_001": {
+      "id": "canon3_misa_intro_001",
+      "type": "scene",
+      "speaker": "system",
+      "location": "light_bedroom",
+      "text": [
+        "Part II: Misa Amane appears as the Second Kira.",
+        "Her Shinigami Eyes make her useful and dangerous."
+      ],
+      "onEnter": [
+        { "type": "flag.set", "key": "misa_second_kira_active", "value": true }
+      ],
+      "next": "canon3_misa_choice_001"
+    },
+    "canon3_misa_choice_001": {
+      "id": "canon3_misa_choice_001",
+      "type": "choice",
+      "speaker": "light",
+      "portrait": "light_focus",
+      "location": "light_bedroom",
+      "text": [
+        "Misa's loyalty can secure victory, but she can also expose me.",
+        "How do I use her?"
+      ],
+      "choices": [
+        {
+          "id": "use_misa_controlled",
+          "label": "Use Misa carefully as a controlled pawn",
+          "effects": [
+            { "type": "flag.set", "key": "misa_controlled", "value": true },
+            { "type": "stat.add", "path": "stats.intel", "value": 2 },
+            { "type": "suspicion.add", "value": 1, "reason": "intel_activity_spike" }
+          ],
+          "next": "canon3_memory_plan_001"
+        },
+        {
+          "id": "trust_misa_fully",
+          "label": "Trust Misa to act independently",
+          "effects": [
+            {
+              "type": "gameover.trigger",
+              "reason": "canon-failure",
+              "detail": "Misa's uncontrolled actions break the canon investigation path."
+            }
+          ],
+          "next": "canon3_fail_misa_001"
+        }
+      ]
+    },
+    "canon3_memory_plan_001": {
+      "id": "canon3_memory_plan_001",
+      "type": "choice",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "Part II key plan: relinquish notebook ownership and lose memories.",
+        "This creates the Yotsuba detour while Light and L investigate together."
+      ],
+      "choices": [
+        {
+          "id": "execute_memory_plan",
+          "label": "Execute memory loss plan and enter confinement",
+          "effects": [
+            { "type": "flag.set", "key": "memory_plan_executed", "value": true },
+            { "type": "stat.add", "path": "stats.alibi", "value": 4 },
+            { "type": "suspicion.add", "value": -3, "reason": "normal_routine" },
+            { "type": "time.advance", "blocks": 2 }
+          ],
+          "next": "canon3_yotsuba_001"
+        },
+        {
+          "id": "skip_memory_plan",
+          "label": "Skip memory plan",
+          "effects": [
+            {
+              "type": "gameover.trigger",
+              "reason": "canon-failure",
+              "detail": "Without the memory plan, Light cannot recreate the canonical Yotsuba shift."
+            }
+          ],
+          "next": "canon3_fail_plan_001"
+        }
+      ]
+    },
+    "canon3_yotsuba_001": {
+      "id": "canon3_yotsuba_001",
+      "type": "scene",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "Yotsuba becomes the temporary Kira front.",
+        "Light and L cooperate to expose the third-party killings."
+      ],
+      "onEnter": [
+        { "type": "flag.set", "key": "yotsuba_arc_active", "value": true }
+      ],
+      "next": "canon3_rem_checkmate_001"
+    },
+    "canon3_rem_checkmate_001": {
+      "id": "canon3_rem_checkmate_001",
+      "type": "choice",
+      "speaker": "light",
+      "portrait": "light_smirk",
+      "location": "taskforce_hq",
+      "text": [
+        "Memories restored. L is still dangerous.",
+        "Only Rem can eliminate L while saving Misa."
+      ],
+      "choices": [
+        {
+          "id": "corner_rem",
+          "label": "Force Rem to protect Misa by killing L",
+          "effects": [
+            { "type": "flag.set", "key": "l_dead", "value": true },
+            { "type": "flag.set", "key": "rem_dead", "value": true },
+            { "type": "milestone.complete", "milestoneId": "L_DEATH_EVENT" },
+            { "type": "suspicion.add", "value": -4, "reason": "cover_shift" },
+            { "type": "time.advance", "blocks": 1 }
+          ],
+          "next": "canon3_timeskip_001"
+        },
+        {
+          "id": "spare_l",
+          "label": "Do not force Rem's hand",
+          "effects": [
+            {
+              "type": "gameover.trigger",
+              "reason": "canon-failure",
+              "detail": "L survives and eventually proves Light is Kira."
+            }
+          ],
+          "next": "canon3_fail_lives_001"
+        }
+      ]
+    },
+    "canon3_timeskip_001": {
+      "id": "canon3_timeskip_001",
+      "type": "scene",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "Part III begins after a five-year time skip.",
+        "Light acts as the new L while ruling as Kira."
+      ],
+      "onEnter": [
+        { "type": "flag.set", "key": "timeskip_started", "value": true },
+        { "type": "time.advance", "blocks": 6 }
+      ],
+      "next": "canon3_near_mello_001"
+    },
+    "canon3_near_mello_001": {
+      "id": "canon3_near_mello_001",
+      "type": "choice",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "Near and Mello inherit L's mission from different angles.",
+        "Choose your response strategy.",
+        "Canon requires Mikami and timing discipline before the warehouse showdown."
+      ],
+      "choices": [
+        {
+          "id": "deploy_mikami",
+          "label": "Use Teru Mikami as Kira proxy",
+          "effects": [
+            { "type": "flag.set", "key": "mikami_proxy_active", "value": true },
+            { "type": "stat.add", "path": "stats.intel", "value": 3 },
+            { "type": "suspicion.add", "value": 2, "reason": "execution_pattern" }
+          ],
+          "next": "canon3_yellow_box_setup_001"
+        },
+        {
+          "id": "act_alone",
+          "label": "Continue as solo Kira without proxy",
+          "effects": [
+            {
+              "type": "gameover.trigger",
+              "reason": "canon-failure",
+              "detail": "Without Mikami, the final canon confrontation cannot occur as in timeline."
+            }
+          ],
+          "next": "canon3_fail_proxy_001"
+        }
+      ]
+    },
+    "canon3_yellow_box_setup_001": {
+      "id": "canon3_yellow_box_setup_001",
+      "type": "choice",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "Mikami is active, but Near still needs a pattern to set the final trap.",
+        "Choose how to steer the lead-in to Yellow Box."
+      ],
+      "choices": [
+        {
+          "id": "trigger_yellow_box",
+          "label": "Press toward the warehouse confrontation",
+          "requirements": [
+            { "type": "flag.is", "key": "mikami_proxy_active", "value": true },
+            { "type": "time.window", "dayMin": 12, "dayMax": 120, "blocks": ["morning", "afternoon", "night"] }
+          ],
+          "effects": [
+            { "type": "time.advance", "blocks": 1 }
+          ],
+          "next": "canon3_yellow_box_001"
+        },
+        {
+          "id": "stall_taskforce",
+          "label": "Stall and over-manage the task force",
+          "effects": [
+            {
+              "type": "gameover.trigger",
+              "reason": "canon-failure",
+              "detail": "Near adjusted first; the warehouse trap never forms in canon order."
+            }
+          ],
+          "next": "canon3_fail_proxy_001"
+        }
+      ]
+    },
+    "canon3_yellow_box_001": {
+      "id": "canon3_yellow_box_001",
+      "type": "scene",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "Yellow Box warehouse: Light declares victory before the strike.",
+        "But Near reveals the notebook pages were replaced."
+      ],
+      "onEnter": [
+        { "type": "flag.set", "key": "yellow_box_triggered", "value": true },
+        { "type": "milestone.complete", "milestoneId": "YELLOW_BOX_CONFRONTATION" }
+      ],
+      "next": "canon3_light_falls_001"
+    },
+    "canon3_light_falls_001": {
+      "id": "canon3_light_falls_001",
+      "type": "scene",
+      "speaker": "ryuk",
+      "portrait": "ryuk_grin",
+      "location": "light_bedroom",
+      "text": [
+        "The game is over, Light.",
+        "Ryuk writes Light Yagami's name."
+      ],
+      "onEnter": [
+        { "type": "flag.set", "key": "light_dead", "value": true },
+        {
+          "type": "gameover.trigger",
+          "reason": "ending",
+          "detail": "Canon ending: Light dies after Ryuk writes his name."
+        }
+      ],
+      "next": null
+    },
+    "canon3_fail_misa_001": {
+      "id": "canon3_fail_misa_001",
+      "type": "system",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "Misa's uncontrolled behavior exposed Kira too early.",
+        "Canon line collapsed."
+      ],
+      "next": null
+    },
+    "canon3_fail_plan_001": {
+      "id": "canon3_fail_plan_001",
+      "type": "system",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "The memory-loss strategy was not executed.",
+        "Yotsuba arc cannot form correctly."
+      ],
+      "next": null
+    },
+    "canon3_fail_lives_001": {
+      "id": "canon3_fail_lives_001",
+      "type": "system",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "L survived and solved the case.",
+        "Light's plan failed."
+      ],
+      "next": null
+    },
+    "canon3_fail_proxy_001": {
+      "id": "canon3_fail_proxy_001",
+      "type": "system",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "Without Mikami, Near never enters the final trap pattern.",
+        "Canon ending cannot trigger."
+      ],
+      "next": null
+    }
+  }
+}

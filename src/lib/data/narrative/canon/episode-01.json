@@ -1,0 +1,131 @@
+{
+  "meta": {
+    "id": "canon-episode-01",
+    "version": 1,
+    "mode": "anime-canon",
+    "startNodeId": "canon_intro_001"
+  },
+  "nodes": {
+    "canon_intro_001": {
+      "id": "canon_intro_001",
+      "type": "scene",
+      "speaker": "light",
+      "portrait": "light_neutral",
+      "location": "light_bedroom",
+      "text": [
+        "This world is rotten.",
+        "Someone has to change it."
+      ],
+      "onEnter": [
+        { "type": "flag.set", "key": "found_notebook", "value": true },
+        { "type": "milestone.complete", "milestoneId": "DEATH_NOTE_DISCOVERY" }
+      ],
+      "next": "canon_killer_test_001"
+    },
+    "canon_killer_test_001": {
+      "id": "canon_killer_test_001",
+      "type": "choice",
+      "speaker": "system",
+      "location": "light_bedroom",
+      "text": [
+        "Canon requires an immediate test of the notebook's power."
+      ],
+      "choices": [
+        {
+          "id": "follow_canon",
+          "label": "Write the first name now",
+          "effects": [
+            { "type": "stat.add", "path": "stats.intel", "value": 2 },
+            { "type": "stat.add", "path": "stats.morality", "value": -2 },
+            { "type": "flag.set", "key": "first_execution_done", "value": true },
+            { "type": "time.advance", "blocks": 1 }
+          ],
+          "next": "canon_l_decoy_001"
+        },
+        {
+          "id": "refuse_canon",
+          "label": "Delay action",
+          "effects": [
+            {
+              "type": "gameover.trigger",
+              "reason": "canon-failure",
+              "detail": "You broke the opening canon beat by delaying first execution."
+            }
+          ],
+          "next": "canon_failure_001"
+        }
+      ]
+    },
+    "canon_l_decoy_001": {
+      "id": "canon_l_decoy_001",
+      "type": "scene",
+      "speaker": "l",
+      "portrait": "l_stare",
+      "location": "taskforce_hq",
+      "text": [
+        "Kira, I can say with certainty that your first victim was in Japan.",
+        "Your challenge is accepted."
+      ],
+      "onEnter": [
+        { "type": "flag.set", "key": "l_challenge_accepted", "value": true }
+      ],
+      "next": "canon_join_taskforce_001"
+    },
+    "canon_join_taskforce_001": {
+      "id": "canon_join_taskforce_001",
+      "type": "choice",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "To stay ahead of L, Light must stay close to the investigation.",
+        "Choose your approach."
+      ],
+      "choices": [
+        {
+          "id": "join_taskforce",
+          "label": "Join the task force and monitor L directly",
+          "effects": [
+            { "type": "flag.set", "key": "joined_taskforce", "value": true },
+            { "type": "stat.add", "path": "stats.alibi", "value": 2 },
+            { "type": "time.advance", "blocks": 1 }
+          ],
+          "next": "canon_system_001"
+        },
+        {
+          "id": "avoid_taskforce",
+          "label": "Avoid direct involvement",
+          "effects": [
+            {
+              "type": "gameover.trigger",
+              "reason": "canon-failure",
+              "detail": "Light failed to enter the investigation and lost narrative parity with L."
+            }
+          ],
+          "next": "canon_failure_001"
+        }
+      ]
+    },
+    "canon_system_001": {
+      "id": "canon_system_001",
+      "type": "system",
+      "speaker": "system",
+      "location": "light_bedroom",
+      "text": [
+        "Part I complete: The cat-and-mouse game with L is underway.",
+        "Future canon milestones now track key investigation beats."
+      ],
+      "next": null
+    },
+    "canon_failure_001": {
+      "id": "canon_failure_001",
+      "type": "system",
+      "speaker": "system",
+      "location": "taskforce_hq",
+      "text": [
+        "Timeline fracture detected.",
+        "Anime canon collapsed."
+      ],
+      "next": null
+    }
+  }
+}

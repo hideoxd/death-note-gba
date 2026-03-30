@@ -1,0 +1,124 @@
+{
+  "meta": {
+    "id": "divergent-chapter-01",
+    "version": 1,
+    "mode": "divergent",
+    "startNodeId": "div_intro_001"
+  },
+  "nodes": {
+    "div_intro_001": {
+      "id": "div_intro_001",
+      "type": "scene",
+      "speaker": "light",
+      "portrait": "light_neutral",
+      "location": "light_bedroom",
+      "text": [
+        "A notebook with impossible rules sits on your desk.",
+        "If this is real, the world will never be the same."
+      ],
+      "onEnter": [
+        { "type": "flag.set", "key": "found_notebook", "value": true }
+      ],
+      "choices": [
+        {
+          "id": "test_power",
+          "label": "Test the notebook immediately",
+          "effects": [
+            { "type": "stat.add", "path": "stats.intel", "value": 2 },
+            { "type": "stat.add", "path": "stats.morality", "value": -2 },
+            { "type": "suspicion.add", "value": 3, "reason": "early_kira_activity" },
+            { "type": "time.advance", "blocks": 1 }
+          ],
+          "next": "div_ryuk_001"
+        },
+        {
+          "id": "observe_first",
+          "label": "Observe and gather context first",
+          "effects": [
+            { "type": "stat.add", "path": "stats.alibi", "value": 2 },
+            { "type": "stat.add", "path": "stats.intel", "value": 1 },
+            { "type": "time.advance", "blocks": 1 }
+          ],
+          "next": "div_school_001"
+        }
+      ],
+      "next": null,
+      "tags": ["intro", "notebook"]
+    },
+    "div_ryuk_001": {
+      "id": "div_ryuk_001",
+      "type": "scene",
+      "speaker": "ryuk",
+      "portrait": "ryuk_grin",
+      "location": "light_bedroom",
+      "text": [
+        "You are interesting, Light Yagami.",
+        "Let's see what kind of god you become."
+      ],
+      "choices": [
+        {
+          "id": "embrace_kira",
+          "label": "I will become the god of a new world",
+          "effects": [
+            { "type": "flag.set", "key": "kira_manifesto", "value": true },
+            { "type": "stat.add", "path": "stats.morality", "value": -5 }
+          ],
+          "next": "div_freeplay_001"
+        },
+        {
+          "id": "deny_intent",
+          "label": "I only removed obvious evil",
+          "effects": [
+            { "type": "stat.add", "path": "stats.morality", "value": 1 },
+            { "type": "suspicion.add", "value": -1, "reason": "hesitation_pattern" }
+          ],
+          "next": "div_freeplay_001"
+        }
+      ]
+    },
+    "div_school_001": {
+      "id": "div_school_001",
+      "type": "scene",
+      "speaker": "light",
+      "portrait": "light_focus",
+      "location": "school_courtyard",
+      "text": [
+        "Everyone follows routines. Predictable routines.",
+        "If I blend in perfectly, no one will ever suspect me."
+      ],
+      "choices": [
+        {
+          "id": "focus_alibi",
+          "label": "Double down on appearing normal",
+          "effects": [
+            { "type": "stat.add", "path": "stats.alibi", "value": 3 },
+            { "type": "suspicion.add", "value": -2, "reason": "routine_strength" }
+          ],
+          "next": "div_freeplay_001"
+        },
+        {
+          "id": "silent_prep",
+          "label": "Prepare quietly for Kira operations",
+          "effects": [
+            { "type": "stat.add", "path": "stats.intel", "value": 2 },
+            { "type": "suspicion.add", "value": 1, "reason": "preparation_signal" }
+          ],
+          "next": "div_freeplay_001"
+        }
+      ]
+    },
+    "div_freeplay_001": {
+      "id": "div_freeplay_001",
+      "type": "system",
+      "speaker": "system",
+      "location": "light_bedroom",
+      "text": [
+        "The city enters reactive state.",
+        "Manage your time blocks to shape this timeline."
+      ],
+      "choices": [],
+      "next": null,
+      "tags": ["freeplay"]
+    }
+  }
+}

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "light",
+    "name": "Light Yagami",
+    "role": "protagonist",
+    "portraits": ["light_neutral", "light_focus", "light_smirk"]
+  },
+  {
+    "id": "ryuk",
+    "name": "Ryuk",
+    "role": "shinigami",
+    "portraits": ["ryuk_idle", "ryuk_grin"]
+  },
+  {
+    "id": "l",
+    "name": "L",
+    "role": "detective",
+    "portraits": ["l_neutral", "l_stare"]
+  },
+  {
+    "id": "sayu",
+    "name": "Sayu Yagami",
+    "role": "family",
+    "portraits": ["sayu_happy", "sayu_worried"]
+  }
+]

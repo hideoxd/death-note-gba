@@ -1,0 +1,55 @@
+{
+  "meta": {
+    "id": "divergent-chapter-02",
+    "version": 1,
+    "mode": "divergent",
+    "startNodeId": "div2_intro_001"
+  },
+  "nodes": {
+    "div2_intro_001": {
+      "id": "div2_intro_001",
+      "type": "scene",
+      "speaker": "l",
+      "portrait": "l_stare",
+      "location": "taskforce_hq",
+      "text": [
+        "Patterns tighten around one region.",
+        "Kira is either reckless, or confident."
+      ],
+      "requirements": [
+        { "type": "compare", "path": "stats.intel", "op": ">=", "value": 4 }
+      ],
+      "choices": [
+        {
+          "id": "countermeasure",
+          "label": "Plant false intel channels",
+          "effects": [
+            { "type": "flag.set", "key": "false_channels", "value": true },
+            { "type": "suspicion.add", "value": -2, "reason": "misdirection_success" }
+          ],
+          "next": "div2_exit_001"
+        },
+        {
+          "id": "aggressive_push",
+          "label": "Escalate executions to intimidate investigators",
+          "effects": [
+            { "type": "stat.add", "path": "stats.morality", "value": -4 },
+            { "type": "suspicion.add", "value": 8, "reason": "execution_surge" }
+          ],
+          "next": "div2_exit_001"
+        }
+      ]
+    },
+    "div2_exit_001": {
+      "id": "div2_exit_001",
+      "type": "system",
+      "speaker": "system",
+      "location": "light_bedroom",
+      "text": [
+        "Divergent chapter complete.",
+        "Future events now branch from your pressure profile."
+      ],
+      "next": null
+    }
+  }
+}

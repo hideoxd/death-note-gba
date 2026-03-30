@@ -1,0 +1,55 @@
+[
+  {
+    "id": "study-library",
+    "label": "Study at Library",
+    "description": "Build a normal student routine and reduce behavioral anomalies.",
+    "tutorialHint": "Best for lowering risk and building your alibi baseline.",
+    "effects": [
+      { "type": "stat.add", "path": "stats.alibi", "value": 3 },
+      { "type": "stat.add", "path": "stats.stress", "value": -1 },
+      { "type": "suspicion.add", "value": -3, "reason": "consistent_study_pattern" }
+    ],
+    "tags": ["alibi", "routine"]
+  },
+  {
+    "id": "intel-scanner",
+    "label": "Scan Police Broadcasts",
+    "description": "Gather criminal profiles while risking suspicious digital footprints.",
+    "tutorialHint": "Strong Intel gain; pair with alibi actions to avoid detection.",
+    "effects": [
+      { "type": "stat.add", "path": "stats.intel", "value": 3 },
+      { "type": "stat.add", "path": "stats.stress", "value": 2 },
+      { "type": "suspicion.add", "value": 2, "reason": "intel_activity_spike" }
+    ],
+    "tags": ["intel", "risk"]
+  },
+  {
+    "id": "socialize-family",
+    "label": "Family Dinner",
+    "description": "Reinforce social cover and lower household suspicion.",
+    "tutorialHint": "Safe action to cool pressure while still making progress.",
+    "effects": [
+      { "type": "stat.add", "path": "stats.alibi", "value": 2 },
+      { "type": "relationship.add", "characterId": "sayu", "metric": "trust", "value": 4 },
+      { "type": "stat.add", "path": "stats.stress", "value": -2 },
+      { "type": "suspicion.add", "value": -2, "reason": "family_cover" }
+    ],
+    "tags": ["alibi", "relationship"]
+  },
+  {
+    "id": "judgment-write",
+    "label": "Write Judgment",
+    "description": "Execute notebook justice at significant investigative risk.",
+    "tutorialHint": "Spend Intel for impact; avoid chaining this repeatedly.",
+    "requirements": [
+      { "type": "compare", "path": "stats.intel", "op": ">=", "value": 2 }
+    ],
+    "effects": [
+      { "type": "stat.add", "path": "stats.intel", "value": -2 },
+      { "type": "stat.add", "path": "stats.morality", "value": -3 },
+      { "type": "stat.add", "path": "stats.stress", "value": 1 },
+      { "type": "suspicion.add", "value": 4, "reason": "execution_pattern" }
+    ],
+    "tags": ["kira", "high-risk"]
+  }
+]

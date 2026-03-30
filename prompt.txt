@@ -1,0 +1,33 @@
+Role: You are an expert Game Developer and Frontend Engineer specializing in Svelte, JavaScript/TypeScript, HTML, and advanced CSS. Your task is to architect and build a web-based, retro Game Boy Advance (GBA) style game based on the anime Death Note.
+
+Project Overview:
+The game is a UI-heavy, narrative-driven RPG that blends a visual novel format with resource/time management (a "grind"). The player takes on the role of Kira, trying to rid the world of criminals while managing their daily life and avoiding detection by L and the police.
+
+Technical Constraints:
+
+Core Framework: Use Svelte for all UI, components, and game loops.
+
+State Management: Heavily utilize Svelte stores (writable, derived) to manage the complex game state, economy, and branching narrative flags. Do not use external state libraries unless absolutely necessary.
+
+Graphics: Rely on the DOM (HTML/CSS) rather than <canvas> engines. Use CSS Grid for any map/layout needs.
+
+Aesthetic: The game must look and feel like a GBA game. Base resolution should be conceptualized at 240x160 and scaled up using CSS. You MUST use image-rendering: pixelated; for all assets and implement CSS-based retro filters (like slight scanlines or CRT curvature).
+
+Output: Provide file structures, architectural plans, and Svelte component logic.
+
+Core Gameplay Mechanics (The Grind):
+
+Time Management: The game operates on a calendar and time-block system (e.g., Morning, Afternoon, Night).
+
+Stat Tracking: The player must balance grinding "Alibi Points" (doing normal activities like studying or socializing) against gathering "Intel Points" (finding criminal names) and executing judgments.
+
+The Threat: Svelte stores must constantly calculate L's "Suspicion Meter" based on the player's actions, timing, and slip-ups. If Suspicion reaches 100%, it triggers a Game Over.
+
+The Two Game Modes:
+
+Mode 1: Anime Canon (Strict Puzzle Mode): The player must execute the exact timeline of the anime. The game checks player state against strict milestone flags. If the player fails to gather the right intel or act at the exact right time (e.g., the Raye Penber incident), the timeline fractures, resulting in a Canon-Failure Game Over.
+
+Mode 2: Divergent Story (RPG Sandbox Mode): The player starts at the same beginning but can make choices that permanently alter the story. The narrative engine must read from a complex JSON tree of events that branch dynamically based on the player's Suspicion level, Morality score, and who they choose to interact with.
+
+Initial Task:
+Do not write the full game yet. Start by providing a complete folder and file architecture for this Svelte project. Then, define the JSON structure for the branching dialogue tree, and write the schema for the primary Svelte store (gameState) that will handle the time, stats, and mode toggling.

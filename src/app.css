@@ -1,0 +1,135 @@
+@import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=UnifrakturMaguntia&family=VT323&display=swap');
+
+@font-face {
+  font-family: 'Death Note';
+  src: url('/assets/fonts/DeathNote.ttf') format('truetype');
+  font-display: swap;
+}
+
+:root {
+  --font-pixel: 'VT323', 'Courier New', monospace;
+  --font-pixel-heading: 'Press Start 2P', 'VT323', monospace;
+  --font-death-note: 'Death Note', 'UnifrakturMaguntia', serif;
+  --font-vt: 'VT323', monospace;
+
+  /* Core palette */
+  --bg-ink: #050508;
+  --bg-night: #0a0a10;
+  --text-main: #e8e8e8;
+
+  /* Death Note reds */
+  --blood-900: #1a0000;
+  --blood-800: #2a0505;
+  --blood-700: #3d0a0a;
+  --blood-600: #5a1515;
+  --blood-500: #8b1a1a;
+  --blood-400: #c12020;
+  --blood-300: #e03030;
+  --blood-200: #ff5555;
+  --blood-glow: rgba(200, 0, 0, 0.35);
+
+  /* Dark blues for panels */
+  --panel-bg: rgba(8, 12, 18, 0.92);
+  --panel-border: rgba(200, 0, 0, 0.25);
+  --panel-highlight: rgba(255, 50, 50, 0.08);
+
+  /* Eye blue for L's theme */
+  --eye-blue: #4a8db5;
+  --eye-glow: rgba(74, 141, 181, 0.3);
+
+  /* Shinigami gold */
+  --ryuk-gold: #c4a44a;
+  --ryuk-glow: rgba(196, 164, 74, 0.3);
+
+  /* Timing & motion */
+  --transition-fast: 150ms;
+  --transition-med: 280ms;
+  --gba-step-timing: steps(6, end);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  font-family: var(--font-vt);
+  font-size: 18px;
+  color: var(--text-main);
+  background: var(--bg-ink);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+/* Animated background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse at 15% 10%, rgba(200, 0, 0, 0.12) 0%, transparent 50%),
+    radial-gradient(ellipse at 85% 90%, rgba(30, 30, 50, 0.5) 0%, transparent 50%),
+    radial-gradient(ellipse at 50% 50%, rgba(10, 5, 15, 1) 0%, var(--bg-ink) 100%);
+  animation: bg-pulse 8s ease-in-out infinite alternate;
+}
+
+@keyframes bg-pulse {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; }
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+img,
+canvas,
+video,
+svg {
+  image-rendering: pixelated;
+}
+
+/* Utility animations */
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
+
+@keyframes flicker {
+  0%, 100% { opacity: 1; }
+  92% { opacity: 1; }
+  93% { opacity: 0.7; }
+  94% { opacity: 1; }
+  96% { opacity: 0.9; }
+  97% { opacity: 1; }
+}
+
+@keyframes scan-down {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100%); }
+}
+
+@keyframes text-glitch {
+  0%, 100% { text-shadow: 1px 1px 0px rgba(200,0,0,0.5), -1px -1px 0px rgba(0,100,200,0.3); }
+  25% { text-shadow: -1px 1px 0px rgba(200,0,0,0.5), 1px -1px 0px rgba(0,100,200,0.3); }
+  50% { text-shadow: 1px -1px 0px rgba(200,0,0,0.5), -1px 1px 0px rgba(0,100,200,0.3); }
+  75% { text-shadow: -1px -1px 0px rgba(200,0,0,0.5), 1px 1px 0px rgba(0,100,200,0.3); }
+}
+
+@keyframes fade-slide-up {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+* {
+  scrollbar-width: thin;
+}

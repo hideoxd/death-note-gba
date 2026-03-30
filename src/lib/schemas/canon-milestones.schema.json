@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "canon-milestones.schema.json",
+  "title": "Death Note Canon Milestones",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "required": ["id", "label", "window", "requiredFlags", "onFail"],
+    "properties": {
+      "id": { "type": "string" },
+      "label": { "type": "string" },
+      "window": {
+        "type": "object",
+        "required": ["dayMin", "dayMax", "blocks"],
+        "properties": {
+          "dayMin": { "type": "integer", "minimum": 1 },
+          "dayMax": { "type": "integer", "minimum": 1 },
+          "blocks": {
+            "type": "array",
+            "items": { "type": "string", "enum": ["morning", "afternoon", "night"] },
+            "minItems": 1
+          }
+        },
+        "additionalProperties": false
+      },
+      "requiredFlags": {
+        "type": "array",
+        "items": { "type": "string" }
+      },
+      "onFail": {
+        "type": "object",
+        "required": ["fracture", "reason"],
+        "properties": {
+          "fracture": { "type": "boolean" },
+          "reason": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "additionalProperties": false
+  }
+}

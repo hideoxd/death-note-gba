@@ -1,0 +1,6 @@
+.gba-pixel-surface {
+  width: 240px;
+  height: 160px;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
