@@ -3,47 +3,134 @@
 
   import '../app.css';
 
-  const BGM_SRC =
-    'https://audio-ssl.itunes.apple.com/itunes-assets/AudioPreview116/v4/a2/ef/37/a2ef371b-b320-f42e-37b4-93daf0baf2a6/mzaf_11111569349534040258.plus.aac.p.m4a';
-  const BGM_VOLUME = 0.25;
+  const YT_VIDEO_ID = 'qR6dzwQahOM';
+  const YT_VOLUME = 25;
+  const YT_CONTAINER_ID = 'yt-bg-player';
 
-  let backgroundAudio: HTMLAudioElement | null = null;
-
-  const applyVolume = () => {
-    if (!backgroundAudio) return;
-    backgroundAudio.volume = BGM_VOLUME;
+  type YouTubeWindow = Window & {
+    YT?: {
+      Player: new (
+        elementId: string,
+        options: {
+          videoId: string;
+          playerVars: Record<string, string | number>;
+          events?: {
+            onReady?: () => void;
+          };
+        }
+      ) => {
+        setVolume: (value: number) => void;
+        playVideo: () => void;
+        destroy: () => void;
+      };
+    };
+    onYouTubeIframeAPIReady?: () => void;
   };
 
-  const startAudio = async () => {
-    if (!backgroundAudio) return;
+  let player: {
+    setVolume: (value: number) => void;
+    playVideo: () => void;
+    destroy: () => void;
+  } | null = null;
+  let ready = false;
 
-    applyVolume();
+  const startPlayback = () => {
+    if (!ready || !player) return;
+    player.setVolume(YT_VOLUME);
+    player.playVideo();
+  };
 
-    try {
-      await backgroundAudio.play();
-    } catch {
-      // Autoplay can be blocked until first user interaction.
+  const loadYouTubeApi = (): Promise<void> => {
+    const ytWindow = window as YouTubeWindow;
+    if (ytWindow.YT?.Player) {
+      return Promise.resolve();
     }
+
+    return new Promise((resolve) => {
+      const prevReady = ytWindow.onYouTubeIframeAPIReady;
+      ytWindow.onYouTubeIframeAPIReady = () => {
+        prevReady?.();
+        resolve();
+      };
+
+      const existing = document.querySelector<HTMLScriptElement>(
+        'script[src="https://www.youtube.com/iframe_api"]'
+      );
+
+      if (!existing) {
+        const script = document.createElement('script');
+        script.src = 'https://www.youtube.com/iframe_api';
+        script.async = true;
+        document.head.appendChild(script);
+      }
+    });
   };
 
   onMount(() => {
-    applyVolume();
-    void startAudio();
+    let disposed = false;
 
-    const unlockAudio = () => {
-      void startAudio();
+    const unlockPlayback = () => {
+      startPlayback();
     };
 
-    window.addEventListener('pointerdown', unlockAudio, { once: true });
-    window.addEventListener('keydown', unlockAudio, { once: true });
+    void loadYouTubeApi().then(() => {
+      if (disposed) return;
+
+      const ytWindow = window as YouTubeWindow;
+      const Player = ytWindow.YT?.Player;
+      if (!Player) return;
+
+      player = new Player(YT_CONTAINER_ID, {
+        videoId: YT_VIDEO_ID,
+        playerVars: {
+          autoplay: 0,
+          controls: 0,
+          disablekb: 1,
+          fs: 0,
+          iv_load_policy: 3,
+          loop: 1,
+          modestbranding: 1,
+          playsinline: 1,
+          rel: 0,
+          playlist: YT_VIDEO_ID
+        },
+        events: {
+          onReady: () => {
+            ready = true;
+            startPlayback();
+          }
+        }
+      });
+    });
+
+    window.addEventListener('pointerdown', unlockPlayback, { once: true });
+    window.addEventListener('keydown', unlockPlayback, { once: true });
 
     return () => {
-      window.removeEventListener('pointerdown', unlockAudio);
-      window.removeEventListener('keydown', unlockAudio);
+      disposed = true;
+      window.removeEventListener('pointerdown', unlockPlayback);
+      window.removeEventListener('keydown', unlockPlayback);
+      ready = false;
+      player?.destroy();
+      player = null;
     };
   });
 </script>
 
-<audio bind:this={backgroundAudio} src={BGM_SRC} loop preload="auto" playsinline aria-hidden="true"></audio>
+<div class="yt-audio-host" aria-hidden="true">
+  <div id={YT_CONTAINER_ID}></div>
+</div>
 
 <slot />
+
+<style>
+  .yt-audio-host {
+    position: fixed;
+    inset: -9999px auto auto -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+</style>
