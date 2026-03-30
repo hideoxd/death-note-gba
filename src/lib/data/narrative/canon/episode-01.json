@@ -1,7 +1,7 @@
 {
   "meta": {
     "id": "canon-episode-01",
-    "version": 1,
+    "version": 2,
     "mode": "anime-canon",
     "startNodeId": "canon_intro_001"
   },
@@ -9,96 +9,136 @@
     "canon_intro_001": {
       "id": "canon_intro_001",
       "type": "scene",
-      "speaker": "light",
-      "portrait": "light_neutral",
+      "speaker": "system",
       "location": "light_bedroom",
       "text": [
-        "This world is rotten.",
-        "Someone has to change it."
+        "Ryuk is bored in the Shinigami Realm. Light is bored in a rotten world.",
+        "Two kinds of boredom collide when the Death Note falls into human hands."
       ],
       "onEnter": [
         { "type": "flag.set", "key": "found_notebook", "value": true },
         { "type": "milestone.complete", "milestoneId": "DEATH_NOTE_DISCOVERY" }
       ],
-      "next": "canon_killer_test_001"
+      "next": "canon_first_test_001"
     },
-    "canon_killer_test_001": {
-      "id": "canon_killer_test_001",
+    "canon_first_test_001": {
+      "id": "canon_first_test_001",
       "type": "choice",
-      "speaker": "system",
+      "speaker": "light",
+      "portrait": "light_focus",
       "location": "light_bedroom",
       "text": [
-        "Canon requires an immediate test of the notebook's power."
+        "Light spends days doubting the notebook, then decides he alone can use it.",
+        "Canon demands an early execution to begin Kira's global signal."
       ],
       "choices": [
         {
           "id": "follow_canon",
-          "label": "Write the first name now",
+          "label": "Test the notebook on a televised criminal",
           "effects": [
             { "type": "stat.add", "path": "stats.intel", "value": 2 },
-            { "type": "stat.add", "path": "stats.morality", "value": -2 },
+            { "type": "stat.add", "path": "stats.morality", "value": -3 },
             { "type": "flag.set", "key": "first_execution_done", "value": true },
+            { "type": "milestone.complete", "milestoneId": "FIRST_EXECUTION_CONFIRMED" },
             { "type": "time.advance", "blocks": 1 }
           ],
-          "next": "canon_l_decoy_001"
+          "next": "canon_tailor_trap_001"
         },
         {
-          "id": "refuse_canon",
-          "label": "Delay action",
+          "id": "delay_execution",
+          "label": "Delay and keep observing",
           "effects": [
             {
               "type": "gameover.trigger",
               "reason": "canon-failure",
-              "detail": "You broke the opening canon beat by delaying first execution."
+              "detail": "Without the first execution, Kira's opening sequence never starts."
             }
           ],
           "next": "canon_failure_001"
         }
       ]
     },
-    "canon_l_decoy_001": {
-      "id": "canon_l_decoy_001",
+    "canon_tailor_trap_001": {
+      "id": "canon_tailor_trap_001",
       "type": "scene",
       "speaker": "l",
       "portrait": "l_stare",
       "location": "taskforce_hq",
       "text": [
-        "Kira, I can say with certainty that your first victim was in Japan.",
-        "Your challenge is accepted."
+        "L uses Lind L. Tailor as bait. Light kills instantly.",
+        "L confirms Kira can kill remotely and narrows the region to Japan."
       ],
       "onEnter": [
         { "type": "flag.set", "key": "l_challenge_accepted", "value": true }
       ],
-      "next": "canon_join_taskforce_001"
+      "next": "canon_taskforce_entry_001"
     },
-    "canon_join_taskforce_001": {
-      "id": "canon_join_taskforce_001",
+    "canon_taskforce_entry_001": {
+      "id": "canon_taskforce_entry_001",
       "type": "choice",
       "speaker": "system",
       "location": "taskforce_hq",
       "text": [
-        "To stay ahead of L, Light must stay close to the investigation.",
-        "Choose your approach."
+        "FBI shadows police families. L's suspicion starts focusing on Light.",
+        "To monitor L directly, Light must embed himself near the investigation."
       ],
       "choices": [
         {
           "id": "join_taskforce",
-          "label": "Join the task force and monitor L directly",
+          "label": "Join the task force orbit and stay close to L",
           "effects": [
             { "type": "flag.set", "key": "joined_taskforce", "value": true },
             { "type": "stat.add", "path": "stats.alibi", "value": 2 },
             { "type": "time.advance", "blocks": 1 }
           ],
-          "next": "canon_system_001"
+          "next": "canon_surveillance_war_001"
         },
         {
           "id": "avoid_taskforce",
-          "label": "Avoid direct involvement",
+          "label": "Avoid direct contact with investigators",
           "effects": [
             {
               "type": "gameover.trigger",
               "reason": "canon-failure",
-              "detail": "Light failed to enter the investigation and lost narrative parity with L."
+              "detail": "Light loses initiative by staying away from the investigation core."
+            }
+          ],
+          "next": "canon_failure_001"
+        }
+      ]
+    },
+    "canon_surveillance_war_001": {
+      "id": "canon_surveillance_war_001",
+      "type": "choice",
+      "speaker": "light",
+      "portrait": "light_smirk",
+      "location": "light_bedroom",
+      "text": [
+        "L places hidden cameras and wiretaps in Light's room.",
+        "Light needs a deception layer that preserves both kills and cover."
+      ],
+      "choices": [
+        {
+          "id": "potato_chip_plan",
+          "label": "Use the potato-chip TV trick to fake normal study behavior",
+          "effects": [
+            { "type": "flag.set", "key": "surveillance_evaded", "value": true },
+            { "type": "stat.add", "path": "stats.intel", "value": 1 },
+            { "type": "stat.add", "path": "stats.alibi", "value": 1 },
+            { "type": "suspicion.add", "value": -1, "reason": "surveillance_counterplay" },
+            { "type": "milestone.complete", "milestoneId": "SURVEILLANCE_WAR_RESOLVED" },
+            { "type": "time.advance", "blocks": 1 }
+          ],
+          "next": "canon_system_001"
+        },
+        {
+          "id": "halt_kira_activity",
+          "label": "Stop all notebook use during surveillance",
+          "effects": [
+            {
+              "type": "gameover.trigger",
+              "reason": "canon-failure",
+              "detail": "The surveillance duel resolves incorrectly and L's model diverges from canon."
             }
           ],
           "next": "canon_failure_001"
@@ -109,10 +149,10 @@
       "id": "canon_system_001",
       "type": "system",
       "speaker": "system",
-      "location": "light_bedroom",
+      "location": "taskforce_hq",
       "text": [
-        "Part I complete: The cat-and-mouse game with L is underway.",
-        "Future canon milestones now track key investigation beats."
+        "Arc I complete: Light and L are locked in open psychological war.",
+        "Next arc: Raye Penber operation and escalation toward Misa."
       ],
       "next": null
     },

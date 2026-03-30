@@ -1,6 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
+  import { onMount } from 'svelte';
 
   import GBAFrame from '$lib/components/shell/GBAFrame.svelte';
   import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
@@ -22,7 +23,6 @@
 
   import { gameState } from '$lib/stores/gameState';
   import { isGameOver, phase } from '$lib/stores/selectors';
-  import { uiState } from '$lib/stores/uiState';
 
   let redirectingToTitle = false;
 
@@ -32,14 +32,33 @@
   }
 
   const togglePause = () => {
+    if ($gameState.phase === 'game-over') {
+      return;
+    }
+
     if ($gameState.phase === 'paused') {
       gameState.setPhase('playing');
     } else if ($gameState.phase === 'playing') {
       gameState.setPhase('paused');
     }
-
-    uiState.togglePauseMenu();
   };
+
+  onMount(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.repeat || $gameState.phase === 'game-over') {
+        return;
+      }
+
+      if (event.key === 'Escape' || event.key.toLowerCase() === 'p') {
+        togglePause();
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  });
 </script>
 
 <main class="game-page">
@@ -68,7 +87,7 @@
           </aside>
         </div>
 
-        {#if $uiState.showPauseMenu && $gameState.phase === 'paused'}
+        {#if $gameState.phase === 'paused'}
           <PauseMenu />
         {/if}
 

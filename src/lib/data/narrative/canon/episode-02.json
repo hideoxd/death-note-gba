@@ -1,7 +1,7 @@
 {
   "meta": {
     "id": "canon-episode-02",
-    "version": 1,
+    "version": 2,
     "mode": "anime-canon",
     "startNodeId": "canon2_open_001"
   },
@@ -9,33 +9,28 @@
     "canon2_open_001": {
       "id": "canon2_open_001",
       "type": "scene",
-      "speaker": "l",
-      "portrait": "l_neutral",
+      "speaker": "system",
       "location": "taskforce_hq",
       "text": [
-        "Kira needs a name and a face.",
-        "So we control what Kira sees next."
+        "The Raye Penber operation begins: identify, control, and erase FBI tails.",
+        "Every move trades information gain for exposure risk."
       ],
       "next": "canon2_milestone_001"
     },
     "canon2_milestone_001": {
       "id": "canon2_milestone_001",
       "type": "choice",
-      "speaker": "system",
+      "speaker": "light",
+      "portrait": "light_focus",
       "location": "train_line",
       "text": [
-        "Raye Penber operation in progress.",
-        "Build the setup, then execute in the correct timing window."
+        "The Raye sequence is a three-step gambit: identify target, force compliance, execute cleanly.",
+        "Stall too long and canon fractures. Rush and suspicion spikes."
       ],
-      "canon": {
-        "milestoneId": "RAYE_PENBER_INCIDENT",
-        "deadline": { "day": 14, "block": "night" },
-        "failureNodeId": "canon2_failure_001"
-      },
       "choices": [
         {
           "id": "track_fbi_pattern",
-          "label": "Track FBI movement and identify Raye",
+          "label": "Map FBI surveillance routes and identify Raye Penber",
           "requirements": [
             { "type": "flag.is", "key": "raye_identified", "value": false }
           ],
@@ -49,7 +44,7 @@
         },
         {
           "id": "prepare_bus_script",
-          "label": "Prepare bus-jacking control script",
+          "label": "Prepare bus-jacking script and control window",
           "requirements": [
             { "type": "flag.is", "key": "raye_identified", "value": true },
             { "type": "flag.is", "key": "raye_controlled", "value": false }
@@ -64,7 +59,7 @@
         },
         {
           "id": "execute_raye",
-          "label": "Trigger the incident exactly on schedule",
+          "label": "Force Raye to write FBI names, then eliminate him",
           "requirements": [
             { "type": "flag.is", "key": "raye_identified", "value": true },
             { "type": "flag.is", "key": "raye_controlled", "value": true },
@@ -80,11 +75,11 @@
             { "type": "milestone.complete", "milestoneId": "RAYE_PENBER_INCIDENT" },
             { "type": "time.advance", "blocks": 1 }
           ],
-          "next": "canon2_clear_001"
+          "next": "canon2_misa_entry_001"
         },
         {
           "id": "maintain_cover",
-          "label": "Maintain cover and wait",
+          "label": "Maintain family cover and reduce pressure",
           "effects": [
             { "type": "stat.add", "path": "stats.alibi", "value": 2 },
             { "type": "suspicion.add", "value": -1, "reason": "family_cover" },
@@ -94,26 +89,40 @@
         },
         {
           "id": "miss_window",
-          "label": "Abandon operation (canon fail)",
+          "label": "Abort operation",
           "effects": [
             {
               "type": "gameover.trigger",
               "reason": "canon-failure",
-              "detail": "Raye Penber milestone was missed."
+              "detail": "Raye Penber sequence was not completed in canon structure."
             }
           ],
           "next": "canon2_failure_001"
         }
       ]
     },
-    "canon2_clear_001": {
-      "id": "canon2_clear_001",
+    "canon2_misa_entry_001": {
+      "id": "canon2_misa_entry_001",
+      "type": "scene",
+      "speaker": "system",
+      "location": "light_bedroom",
+      "text": [
+        "Misa Amane enters with Shinigami Eyes. Rem will sacrifice herself to protect Misa.",
+        "Light gains leverage, but one impulsive move can burn the timeline."
+      ],
+      "onEnter": [
+        { "type": "flag.set", "key": "misa_second_kira_active", "value": true }
+      ],
+      "next": "canon2_system_001"
+    },
+    "canon2_system_001": {
+      "id": "canon2_system_001",
       "type": "system",
       "speaker": "system",
       "location": "taskforce_hq",
       "text": [
-        "Raye Penber operation complete.",
-        "L closes in while Misa Amane enters the board as Second Kira."
+        "Arc II complete: Raye operation succeeded and Misa enters play.",
+        "Next arc covers memory-loss gamble, Yotsuba detour, and L's downfall."
       ],
       "next": null
     },
@@ -124,7 +133,7 @@
       "location": "taskforce_hq",
       "text": [
         "Canon puzzle failed.",
-        "You reached a non-canon branch endpoint."
+        "Raye operation diverged and timeline collapsed."
       ],
       "next": null
     }

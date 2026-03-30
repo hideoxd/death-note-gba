@@ -19,6 +19,9 @@
 <article class="card" class:disabled={activity.disabled}>
   <h4>{activity.label}</h4>
   <p class="desc">{activity.description}</p>
+  {#if activity.tutorialHint}
+    <p class="hint">TIP: {activity.tutorialHint}</p>
+  {/if}
   {#if activity.unmet.length > 0}
     <p class="lock">🔒 {activity.unmet.join(' | ')}</p>
   {/if}
@@ -66,6 +69,14 @@
     margin: 0;
     font-size: 4px;
     color: #aa5555;
+    font-family: var(--font-pixel, monospace);
+  }
+
+  .hint {
+    margin: 0;
+    font-size: 4px;
+    line-height: 1.25;
+    color: #6a8a74;
     font-family: var(--font-pixel, monospace);
   }
 

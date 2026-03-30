@@ -61,6 +61,10 @@ const getCanonicalRecommendedChoiceId = (state: GameState): string | null => {
     return 'join_taskforce';
   }
 
+   if (!canonicalFlag(state, 'surveillance_evaded')) {
+    return 'potato_chip_plan';
+  }
+
   if (!canonicalFlag(state, 'canon_episode_02_started')) {
     return null;
   }
@@ -89,6 +93,10 @@ const getCanonicalRecommendedChoiceId = (state: GameState): string | null => {
     return 'execute_memory_plan';
   }
 
+  if (!canonicalFlag(state, 'higuchi_captured')) {
+    return 'recover_memory_and_kill_higuchi';
+  }
+
   if (!canonicalFlag(state, 'l_dead')) {
     return 'corner_rem';
   }
@@ -97,8 +105,16 @@ const getCanonicalRecommendedChoiceId = (state: GameState): string | null => {
     return 'deploy_mikami';
   }
 
+  if (!canonicalFlag(state, 'takada_channel_established')) {
+    return 'stabilize_takada_channel';
+  }
+
+  if (!canonicalFlag(state, 'mello_interference')) {
+    return 'allow_mello_interference';
+  }
+
   if (!canonicalFlag(state, 'yellow_box_triggered')) {
-    return 'trigger_yellow_box';
+    return null;
   }
 
   return null;
@@ -291,6 +307,10 @@ export const gameplayHint = derived(gameState, ($state) => {
       return 'Canon step: join the task force to stay near L.';
     }
 
+    if (!$state.flags.surveillance_evaded) {
+      return 'Canon step: win the surveillance war with the potato-chip deception plan.';
+    }
+
     if (!$state.flags.canon_episode_02_started) {
       return 'Advance to Day 2 to unlock the Raye Penber arc.';
     }
@@ -320,7 +340,11 @@ export const gameplayHint = derived(gameState, ($state) => {
     }
 
     if (!$state.flags.memory_plan_executed) {
-      return 'Canon step: execute memory-loss plan to recreate Yotsuba handoff.';
+      return 'Canon step: execute memory-loss plan to begin the Yotsuba handoff.';
+    }
+
+    if (!$state.flags.higuchi_captured) {
+      return 'Canon step: recover notebook memories during Higuchi capture.';
     }
 
     if (!$state.flags.l_dead) {
@@ -328,7 +352,15 @@ export const gameplayHint = derived(gameState, ($state) => {
     }
 
     if (!$state.flags.mikami_proxy_active) {
-      return 'Canon step: deploy Mikami to trigger Yellow Box setup.';
+      return 'Canon step: deploy Mikami as execution proxy.';
+    }
+
+    if (!$state.flags.takada_channel_established) {
+      return 'Canon step: establish Takada as proxy communication channel.';
+    }
+
+    if (!$state.flags.mello_interference) {
+      return 'Canon step: preserve the chain where Mello forces Mikami to deviate.';
     }
 
     if (!$state.flags.yellow_box_triggered) {

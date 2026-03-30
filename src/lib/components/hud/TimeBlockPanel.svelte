@@ -13,6 +13,7 @@
     <span class="value">{$actionsRemaining} left</span>
   </div>
   <button type="button" on:click={advance}>Skip ▸</button>
+  <p class="hint">{$gameplayHint}</p>
 </section>
 
 <style>
@@ -64,5 +65,13 @@
     background: linear-gradient(180deg, rgba(50, 15, 15, 0.95) 0%, rgba(30, 8, 8, 0.95) 100%);
     border-color: rgba(200, 0, 0, 0.4);
     color: #d0c0c0;
+  }
+
+  .hint {
+    margin: 0;
+    font-size: 4px;
+    line-height: 1.3;
+    font-family: var(--font-pixel, monospace);
+    color: #8a7777;
   }
 </style>

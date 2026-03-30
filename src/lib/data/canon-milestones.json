@@ -28,6 +28,20 @@
     }
   },
   {
+    "id": "SURVEILLANCE_WAR_RESOLVED",
+    "label": "Light evades L's room surveillance",
+    "window": {
+      "dayMin": 2,
+      "dayMax": 7,
+      "blocks": ["morning", "afternoon", "night"]
+    },
+    "requiredFlags": ["surveillance_evaded"],
+    "onFail": {
+      "fracture": true,
+      "reason": "Surveillance war outcome diverged from canon."
+    }
+  },
+  {
     "id": "RAYE_PENBER_INCIDENT",
     "label": "Raye Penber incident executed",
     "window": {
@@ -39,6 +53,20 @@
     "onFail": {
       "fracture": true,
       "reason": "Raye Penber event failed and canon timeline fractured."
+    }
+  },
+  {
+    "id": "YOTSUBA_MEMORY_PLAN",
+    "label": "Memory-loss gamble and Higuchi capture",
+    "window": {
+      "dayMin": 8,
+      "dayMax": 45,
+      "blocks": ["morning", "afternoon", "night"]
+    },
+    "requiredFlags": ["memory_plan_executed", "higuchi_captured"],
+    "onFail": {
+      "fracture": true,
+      "reason": "Yotsuba handoff failed and Light could not recover canon momentum."
     }
   },
   {
@@ -56,6 +84,20 @@
     }
   },
   {
+    "id": "PROXY_NETWORK_STABLE",
+    "label": "Takada-Mikami proxy network established",
+    "window": {
+      "dayMin": 12,
+      "dayMax": 120,
+      "blocks": ["morning", "afternoon", "night"]
+    },
+    "requiredFlags": ["mikami_proxy_active", "takada_channel_established"],
+    "onFail": {
+      "fracture": true,
+      "reason": "Proxy communication network failed before final confrontation."
+    }
+  },
+  {
     "id": "YELLOW_BOX_CONFRONTATION",
     "label": "Near exposes Light in Yellow Box",
     "window": {
@@ -63,7 +105,7 @@
       "dayMax": 120,
       "blocks": ["morning", "afternoon", "night"]
     },
-    "requiredFlags": ["yellow_box_triggered"],
+    "requiredFlags": ["mello_interference", "yellow_box_triggered"],
     "onFail": {
       "fracture": true,
       "reason": "Final confrontation diverged before Light's canon downfall."

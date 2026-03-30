@@ -1,14 +1,25 @@
 <script lang="ts">
   import { gameState } from '$lib/stores/gameState';
-  import { uiState } from '$lib/stores/uiState';
 
   const resume = () => {
     gameState.setPhase('playing');
-    uiState.togglePauseMenu();
+  };
+
+  const closeOnBackdrop = (event: MouseEvent) => {
+    if (event.target !== event.currentTarget) {
+      return;
+    }
+
+    resume();
   };
 </script>
 
-<div class="overlay">
+<div class="overlay" role="button" tabindex="0" on:click={closeOnBackdrop} on:keydown={(event) => {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault();
+    resume();
+  }
+}}>
   <section class="menu">
     <div class="menu-header">
       <h2>⏸ PAUSED</h2>
@@ -30,6 +41,10 @@
     z-index: 25;
     backdrop-filter: blur(1px);
     animation: overlay-in 150ms ease-out;
+  }
+
+  .overlay:focus {
+    outline: none;
   }
 
   @keyframes overlay-in {

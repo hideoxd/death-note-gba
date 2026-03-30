@@ -51,11 +51,13 @@ const hasReached = (
 
 const evaluateCanonProgression = (state: GameState): ProgressionResult => {
   const firstExecutionDone = Boolean(state.flags.first_execution_done);
+  const surveillanceResolved = Boolean(state.flags.surveillance_evaded);
   const episode2Started = Boolean(state.flags.canon_episode_02_started);
   const episode3Started = Boolean(state.flags.canon_episode_03_started);
 
   if (
     firstExecutionDone &&
+    surveillanceResolved &&
     !episode2Started &&
     state.narrative.activeTreeId === 'canon-episode-01' &&
     hasReached(state, 2, 'morning')
@@ -73,7 +75,7 @@ const evaluateCanonProgression = (state: GameState): ProgressionResult => {
 
     return {
       state: next,
-      message: 'Canon Episode 2 unlocked: Raye Penber operation phase begins.'
+      message: 'Canon Episode 2 unlocked: Raye Penber operation and Misa escalation begin.'
     };
   }
 
@@ -98,7 +100,8 @@ const evaluateCanonProgression = (state: GameState): ProgressionResult => {
 
     return {
       state: next,
-      message: 'Canon Episode 3 unlocked: Second Kira, succession, and final confrontation.'
+      message:
+        'Canon Episode 3 unlocked: memory-loss gamble, Yotsuba recovery, and successor-era endgame.'
     };
   }
 
@@ -116,7 +119,7 @@ const evaluateCanonProgression = (state: GameState): ProgressionResult => {
           canon_route_stable: true
         }
       },
-      message: 'Canon route reached final resolution. Ryuk closes the game.'
+      message: 'Canon route reached final resolution: Yellow Box exposes Light and Ryuk ends the game.'
     };
   }
 

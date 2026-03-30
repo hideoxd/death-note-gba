@@ -1,10 +1,6 @@
 <script lang="ts">
   import { gameState } from '$lib/stores/gameState';
-  import {
-    canContinueFromCurrentNode,
-    choiceOptions,
-    unreachableCurrentNode
-  } from '$lib/stores/selectors';
+  import { canContinueFromCurrentNode, choiceOptions, gameplayHint, unreachableCurrentNode } from '$lib/stores/selectors';
 
   const selectChoice = (choiceId: string) => {
     gameState.selectChoice(choiceId);
@@ -45,6 +41,8 @@
       {/if}
     {/each}
   {/if}
+
+  <p class="hint">{$gameplayHint}</p>
 </section>
 
 <style>
@@ -126,6 +124,14 @@
     margin: 0;
     font-size: 4px;
     color: #504848;
+    font-family: var(--font-pixel, monospace);
+  }
+
+  .hint {
+    margin: 1px 0 0;
+    font-size: 4px;
+    line-height: 1.25;
+    color: #7f7070;
     font-family: var(--font-pixel, monospace);
   }
 </style>
