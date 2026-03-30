@@ -16,7 +16,7 @@
 <style>
   .dialogue-box {
     min-height: 28px;
-    padding: 3px 5px;
+    padding: 3px 5px 7px;
     border: 1px solid rgba(200, 0, 0, 0.15);
     background: linear-gradient(180deg, rgba(12, 6, 8, 0.98) 0%, rgba(8, 4, 6, 0.98) 100%);
     display: grid;
@@ -58,9 +58,8 @@
     color: #d0c8c8;
     text-shadow: 1px 1px 0px rgba(0, 0, 0, 0.8);
     animation: text-appear 150ms ease-out both;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   @keyframes text-appear {
