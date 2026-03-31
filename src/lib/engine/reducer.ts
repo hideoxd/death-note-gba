@@ -3,6 +3,7 @@ import { evaluateCanonTimeline } from '$lib/engine/canon';
 import { evaluateRequirements, listUnmetRequirements } from '$lib/engine/conditions';
 import { getCurrentNode, getDialogueTree, visitNode } from '$lib/engine/dialogue';
 import { applyEffects } from '$lib/engine/effects';
+import { generateTargetWave, getTargetOpinionImpact, toInvestigationTargets } from '$lib/engine/npcGenerator';
 import { evaluateStoryProgression } from '$lib/engine/progression';
 import { createInitialGameState } from '$lib/engine/stateFactory';
 import { applySuspicionDelta, recalculateSuspicion } from '$lib/engine/suspicion';
@@ -100,51 +101,6 @@ const decoyOpinionPenalty = 20;     // Killing an innocent spikes anti-Kira sent
 const opinionDecayPerBlock = 1.5;   // Drifts toward neutral each time block
 const hostileOpinionThreshold = 50; // Above this, intel gathering gets penalized
 const hostileIntelSuspicionBonus = 2;
-
-const targetAliasPool = [
-  'Insider Trading Broker',
-  'Counterfeit Passport Runner',
-  'Kidnapping Coordinator',
-  'Arms Auction Facilitator',
-  'Serial Fraud Architect',
-  'Violent Loan Shark',
-  'Blackmail Syndicate Fixer',
-  'Organized Arson Contact'
-];
-
-const targetNamePool = [
-  'Koji Imanishi',
-  'Ren Takigawa',
-  'Atsushi Kudo',
-  'Yuto Nishimori',
-  'Takumi Hasebe',
-  'Shunpei Odawara',
-  'Naoki Ishizuka',
-  'Keita Minagawa'
-];
-
-const buildTargetWave = (wave: number): GameState['investigation']['targets'] => {
-  const count = 4;
-  const decoyIndex = Math.abs(wave + 1) % count;
-
-  return Array.from({ length: count }, (_, index) => {
-    const alias = targetAliasPool[(wave + index - 1) % targetAliasPool.length];
-    const trueName = targetNamePool[(wave * 2 + index - 1) % targetNamePool.length];
-    const region = regionBiasOrder[(wave + index - 1) % regionBiasOrder.length];
-
-    return {
-      id: `wave-${wave}-target-${index + 1}`,
-      alias,
-      trueName,
-      region,
-      isDecoy: index === decoyIndex,
-      knownName: false,
-      knownFace: false,
-      faceSource: null,
-      eliminated: false
-    };
-  });
-};
 
 const nextFlagCounter = (value: boolean | number | string | undefined): number => {
   if (typeof value !== 'number') {
@@ -430,6 +386,8 @@ const refreshInvestigationWave = (state: GameState): GameState => {
   const currentWave = typeof currentWaveFlag === 'number' ? Math.max(1, Math.floor(currentWaveFlag)) : 1;
   const nextWave = currentWave + 1;
 
+  const generated = generateTargetWave(state.seed, nextWave);
+
   return {
     ...state,
     flags: {
@@ -439,7 +397,7 @@ const refreshInvestigationWave = (state: GameState): GameState => {
     investigation: {
       ...state.investigation,
       activeTargetIndex: 0,
-      targets: buildTargetWave(nextWave)
+      targets: toInvestigationTargets(generated)
     }
   };
 };
@@ -901,15 +859,24 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       next = applyExecutionContextPenalties(next, target);
       next = triggerLInterventionIfNeeded(state, next, target.isDecoy ? 'decoy_execution' : `execution_${cause}`);
 
-      // World Opinion shift
+      // World Opinion shift — uses per-target crime severity from generator
       if (target.isDecoy) {
         next = updateWorldOpinion(next, decoyOpinionPenalty);
         next = pushLog(next, 'system', 'Public outrage: an innocent was killed. Anti-Kira sentiment surges.');
       } else {
-        // Criminals lower opinion (public supports Kira cleaning up crime)
-        // but heart attacks are more suspicious pattern-wise
-        const opinionShift = -baseOpinionShiftPerExecution[cause] + (cause === 'heart-attack' ? 2 : 0);
+        const currentWave = typeof next.flags.investigation_wave === 'number'
+          ? Math.max(1, Math.floor(next.flags.investigation_wave)) : 1;
+        const crimeOpinionImpact = getTargetOpinionImpact(state.seed, currentWave, target.id);
+        // If generator returns a value, use it; otherwise fall back to cause-based shift
+        const opinionShift = crimeOpinionImpact !== 0
+          ? crimeOpinionImpact
+          : -baseOpinionShiftPerExecution[cause] + (cause === 'heart-attack' ? 2 : 0);
         next = updateWorldOpinion(next, opinionShift);
+        if (crimeOpinionImpact < -6) {
+          next = pushLog(next, 'system', 'Public supports the elimination of a high-threat criminal.');
+        } else if (crimeOpinionImpact > 3) {
+          next = pushLog(next, 'system', 'Targeting a minor offender raises public concern about Kira.');
+        }
       }
 
       next = pushLog(next, 'action', `Judgment written: ${target.trueName} (${deathCauseLabels[cause]}).`);

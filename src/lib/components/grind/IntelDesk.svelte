@@ -2,6 +2,7 @@
   import { onDestroy } from 'svelte';
   import { draw, fade, fly } from 'svelte/transition';
 
+  import { generateTargetWave, severityLabel, threatColorClass } from '$lib/engine/npcGenerator';
   import { gameState } from '$lib/stores/gameState';
   import { dualModeView, pendingCauseCountdown, shinigamiVisibleNames } from '$lib/stores/selectors';
   import {
@@ -163,6 +164,14 @@
   $: inkPaths = buildInkPaths(inkPreview);
   $: eyeNameRows = $shinigamiVisibleNames.slice(0, 3);
 
+  // Threat level lookup from the procedural generator
+  $: currentWaveNum = typeof $gameState.flags.investigation_wave === 'number'
+    ? Math.max(1, Math.floor($gameState.flags.investigation_wave)) : 1;
+  $: generatedTargets = generateTargetWave($gameState.seed, currentWaveNum);
+  $: activeGenerated = generatedTargets.find(t => t.id === activeTarget?.id) ?? null;
+  $: threatLevel = activeGenerated?.threatLevel ?? 0;
+  $: threatSeverity = activeGenerated?.crime.severity ?? 'moderate';
+
   const clearHeartbeatTicker = () => {
     if (!heartbeatTicker) return;
     clearInterval(heartbeatTicker);
@@ -295,6 +304,9 @@
         <p class="intel-state">
           <span class:ok={activeTarget.knownName}>N</span>
           <span class:ok={activeTarget.knownFace}>F</span>
+          {#if threatLevel > 0}
+            <span class="threat-badge {threatColorClass(threatLevel)}">{severityLabel(threatSeverity)}</span>
+          {/if}
           {#if activeTarget.isDecoy && !activeTarget.eliminated}
             <span class="decoy">?</span>
           {/if}
@@ -546,7 +558,47 @@
   }
 
   .intel-state .decoy {
-    color: #ba8f5a;
+    color: #c4a44a;
+    animation: decoy-blink 700ms steps(2, end) infinite;
+  }
+
+  .threat-badge {
+    font-size: 3.5px;
+    letter-spacing: 0.3px;
+    padding: 0 2px;
+    border-radius: 1px;
+    font-weight: bold;
+  }
+
+  .threat-petty {
+    color: #7a9a7a;
+    background: rgba(80, 140, 80, 0.15);
+  }
+
+  .threat-moderate {
+    color: #9a9a6a;
+    background: rgba(150, 150, 80, 0.15);
+  }
+
+  .threat-serious {
+    color: #cc8844;
+    background: rgba(200, 130, 60, 0.15);
+  }
+
+  .threat-major {
+    color: #cc5555;
+    background: rgba(200, 70, 70, 0.15);
+  }
+
+  .threat-boss {
+    color: #e040e0;
+    background: rgba(200, 60, 200, 0.15);
+    animation: boss-glow 800ms steps(2, end) infinite;
+  }
+
+  @keyframes boss-glow {
+    0%, 60% { opacity: 1; }
+    61%, 100% { opacity: 0.6; }
   }
 
   .eye-reveal {

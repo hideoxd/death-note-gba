@@ -1,55 +1,7 @@
 import { CANON_MILESTONES, DEFAULT_TREE_BY_MODE, DIALOGUE_TREES } from '$lib/data';
+import { generateTargetWave, toInvestigationTargets } from '$lib/engine/npcGenerator';
 import { createInitialSuspicionBreakdown } from '$lib/engine/suspicion';
-import type { GameMode, GameState, InvestigationRegion, Phase } from '$lib/types/game';
-
-const regionByIndex: InvestigationRegion[] = ['kanto', 'kansai', 'tohoku', 'kyushu'];
-
-const investigationTargetSeed: GameState['investigation']['targets'] = [
-  {
-    id: 'target-01',
-    alias: 'Bus Hijacker Suspect',
-    trueName: 'Daiki Hamura',
-    region: regionByIndex[0],
-    isDecoy: false,
-    knownName: false,
-    knownFace: false,
-    faceSource: null,
-    eliminated: false
-  },
-  {
-    id: 'target-02',
-    alias: 'Corporate Bribe Broker',
-    trueName: 'Kenta Moroboshi',
-    region: regionByIndex[1],
-    isDecoy: false,
-    knownName: false,
-    knownFace: false,
-    faceSource: null,
-    eliminated: false
-  },
-  {
-    id: 'target-03',
-    alias: 'Serial Extortion Caller',
-    trueName: 'Riku Kasahara',
-    region: regionByIndex[2],
-    isDecoy: true,
-    knownName: false,
-    knownFace: false,
-    faceSource: null,
-    eliminated: false
-  },
-  {
-    id: 'target-04',
-    alias: 'Arson Ring Planner',
-    trueName: 'Shota Mikuni',
-    region: regionByIndex[3],
-    isDecoy: false,
-    knownName: false,
-    knownFace: false,
-    faceSource: null,
-    eliminated: false
-  }
-];
+import type { GameMode, GameState, Phase } from '$lib/types/game';
 
 const relationshipSeed = {
   l: { trust: -10, suspicion: 12, affinity: -20 },
@@ -104,9 +56,6 @@ const cloneRelationshipSeed = (): GameState['relationships'] => ({
   sayu: { ...relationshipSeed.sayu }
 });
 
-const cloneInvestigationTargets = (): GameState['investigation']['targets'] =>
-  investigationTargetSeed.map((target) => ({ ...target }));
-
 const buildMilestoneState = (): GameState['canon']['milestoneState'] => {
   const entries = CANON_MILESTONES.map((milestone) => [milestone.id, 'locked'] as const);
   return Object.fromEntries(entries);
@@ -129,13 +78,16 @@ export const createInitialGameState = (
   const firstMilestone = CANON_MILESTONES[0]?.id ?? null;
   const milestoneState = buildMilestoneState();
 
+  const gameSeed = createSeed();
+  const initialTargets = toInvestigationTargets(generateTargetWave(gameSeed, 1));
+
   if (mode === 'anime-canon' && firstMilestone) {
     milestoneState[firstMilestone] = 'active';
   }
 
   return {
     version: 2,
-    seed: createSeed(),
+    seed: gameSeed,
     mode,
     phase,
     clock: {
@@ -172,7 +124,7 @@ export const createInitialGameState = (
     investigation: {
       activeTargetIndex: 0,
       selectedCause: 'heart-attack',
-      targets: cloneInvestigationTargets(),
+      targets: initialTargets,
       eliminationLog: []
     },
     narrative: {
