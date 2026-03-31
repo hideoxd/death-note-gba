@@ -21,9 +21,10 @@
           : 'LOW';
 
   $: meterWidth = Math.max(0, Math.min(100, Math.round($suspenseMeterMotion)));
+  $: meterHeight = Math.max(2, Math.min(10, 2 + Math.round(($suspenseMeterMotion / 100) * 6)));
 </script>
 
-<section class="panel {tone}">
+<section class="panel {tone}" style="--meter-height: {meterHeight}px;">
   <div class="header-row">
     <h3>◉ L</h3>
     <span class="pct">{$suspicionPercent}% <span class="{trendClass}">{trendLabel}</span></span>
@@ -104,10 +105,11 @@
 
   .meter-shell {
     width: 100%;
-    height: 4px;
+    height: var(--meter-height, 4px);
     border: 1px solid rgba(80, 40, 40, 0.3);
     background: rgba(0, 0, 0, 0.5);
     overflow: hidden;
+    transition: height 260ms ease-out;
   }
 
   .meter-fill {

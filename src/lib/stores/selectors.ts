@@ -441,15 +441,28 @@ export const patternData = derived(gameState, ($state) => {
     kyushu: 0
   };
 
+  let decoyHits = 0;
+  let schoolHourHits = 0;
+
   for (const entry of entries) {
     byBlock[entry.block] += 1;
     byRegion[entry.region] += 1;
+
+    if (entry.decoy) {
+      decoyHits += 1;
+    }
+
+    if (entry.block === 'morning' || entry.block === 'afternoon') {
+      schoolHourHits += 1;
+    }
   }
 
   return {
     total: entries.length,
     byBlock,
     byRegion,
+    decoyHits,
+    schoolHourHits,
     dominantBlock: (Object.entries(byBlock).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'morning') as TimeBlock,
     dominantRegion: (Object.entries(byRegion).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'kanto') as
       | 'kanto'
@@ -464,6 +477,20 @@ export const dualModeView = derived(gameState, ($state) => {
 });
 
 export const shinigamiEyeActive = derived(gameState, ($state) => Boolean($state.flags.shinigami_eye_active));
+
+export const shinigamiVisibleNames = derived(gameState, ($state) => {
+  if ($state.flags.shinigami_eye_active !== true) {
+    return [] as { id: string; alias: string; trueName: string }[];
+  }
+
+  return $state.investigation.targets
+    .filter((target) => !target.eliminated)
+    .map((target) => ({
+      id: target.id,
+      alias: target.alias,
+      trueName: target.trueName
+    }));
+});
 
 export const unreachableCurrentNode = derived(gameState, ($state) => {
   const node = getCurrentNode($state);

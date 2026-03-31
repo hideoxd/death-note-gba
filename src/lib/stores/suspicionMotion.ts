@@ -1,26 +1,26 @@
-import { spring } from 'svelte/motion';
+import { cubicOut } from 'svelte/easing';
+import { tweened } from 'svelte/motion';
 
 import { gameState } from '$lib/stores/gameState';
 
-const suspenseSpring = spring(0, {
-  stiffness: 0.2,
-  damping: 0.6,
-  precision: 0.01
+const suspenseTween = tweened(0, {
+  duration: 260,
+  easing: cubicOut
 });
 
 let previous = 0;
 
 gameState.subscribe((state) => {
   const next = Math.round(state.suspicion.meter);
+  const delta = Math.abs(next - previous);
+  const duration = Math.max(170, Math.min(760, 180 + delta * 22));
 
-  if (Math.abs(next - previous) >= 8) {
-    suspenseSpring.set(next + 7, { hard: true });
-    suspenseSpring.set(next);
-  } else {
-    suspenseSpring.set(next);
-  }
+  suspenseTween.set(next, {
+    duration,
+    easing: cubicOut
+  });
 
   previous = next;
 });
 
-export const suspenseMeterMotion = suspenseSpring;
+export const suspenseMeterMotion = suspenseTween;

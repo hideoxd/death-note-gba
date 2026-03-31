@@ -27,6 +27,7 @@ export interface InvestigationTarget {
   alias: string;
   trueName: string;
   region: InvestigationRegion;
+  isDecoy: boolean;
   knownName: boolean;
   knownFace: boolean;
   faceSource: FaceIntelSource;
@@ -38,6 +39,7 @@ export interface EliminationRecord {
   alias: string;
   trueName: string;
   region: InvestigationRegion;
+  decoy?: boolean;
   cause: DeathCause;
   day: number;
   block: TimeBlock;

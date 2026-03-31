@@ -9,6 +9,17 @@
   let canContinue = false;
   let showMenu = false;
   let showRules = false;
+  let pressedStart = false;
+  let pressedSelect = false;
+  let pressedA = false;
+  let pressedB = false;
+
+  const clearPressed = () => {
+    pressedStart = false;
+    pressedSelect = false;
+    pressedA = false;
+    pressedB = false;
+  };
 
   onMount(() => {
     canContinue = hasSnapshot();
@@ -17,6 +28,18 @@
     }, 800);
 
     const onKeyDown = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+
+      if (key === 'enter') {
+        pressedStart = true;
+      } else if (key === 'shift') {
+        pressedSelect = true;
+      } else if (key === 'z') {
+        pressedA = true;
+      } else if (key === 'x') {
+        pressedB = true;
+      }
+
       if (event.repeat) return;
 
       if (event.key === 'Enter') {
@@ -35,17 +58,52 @@
         return;
       }
 
-      if (event.key === 'Shift') {
+      if (key === 'z') {
+        event.preventDefault();
+        if (showRules) {
+          showRules = false;
+          return;
+        }
+
+        if (canContinue) {
+          void continueGame();
+          return;
+        }
+
+        void start('anime-canon');
+        return;
+      }
+
+      if (event.key === 'Shift' || key === 'x') {
         event.preventDefault();
         showRules = !showRules;
       }
     };
 
+    const onKeyUp = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+
+      if (key === 'enter') {
+        pressedStart = false;
+      } else if (key === 'shift') {
+        pressedSelect = false;
+      } else if (key === 'z') {
+        pressedA = false;
+      } else if (key === 'x') {
+        pressedB = false;
+      }
+    };
+
     window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', clearPressed);
 
     return () => {
       window.clearTimeout(timer);
       window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', clearPressed);
+      clearPressed();
     };
   });
 
@@ -88,7 +146,15 @@
 </script>
 
 <main class="title-page">
-  <GBAFrame title="Death Note: Kira Protocol" on:start={triggerStart} on:select={triggerSelect}>
+  <GBAFrame
+    title="Death Note: Kira Protocol"
+    pressedStart={pressedStart}
+    pressedSelect={pressedSelect}
+    pressedA={pressedA}
+    pressedB={pressedB}
+    on:start={triggerStart}
+    on:select={triggerSelect}
+  >
     <GBAScreen>
       <section class="title-screen">
         <!-- Decorative background elements -->

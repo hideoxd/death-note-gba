@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { get } from 'svelte/store';
+
   import { gameState } from '$lib/stores/gameState';
   import { uiState } from '$lib/stores/uiState';
 
@@ -8,6 +10,11 @@
 
   const toggleLog = () => {
     uiState.toggleLogPanel();
+  };
+
+  const adjustSfx = (delta: number) => {
+    const current = get(uiState).sfxVolume;
+    uiState.setSfxVolume(current + delta);
   };
 
   const closeOnBackdrop = (event: MouseEvent) => {
@@ -36,6 +43,11 @@
     <button type="button" on:click={toggleLog}>
       <span class="icon">◫</span> Toggle Log
     </button>
+    <div class="vol-row">
+      <span class="label">SFX</span>
+      <button type="button" class="tiny" on:click={() => adjustSfx(-0.1)}>-</button>
+      <button type="button" class="tiny" on:click={() => adjustSfx(0.1)}>+</button>
+    </div>
   </section>
 </div>
 
@@ -125,5 +137,25 @@
   .icon {
     color: #cc0000;
     font-size: 6px;
+  }
+
+  .vol-row {
+    display: grid;
+    grid-template-columns: 1fr 16px 16px;
+    gap: 2px;
+    align-items: center;
+  }
+
+  .label {
+    font-size: 5px;
+    color: #8a7c7c;
+    font-family: var(--font-pixel, monospace);
+    text-transform: uppercase;
+  }
+
+  .tiny {
+    justify-content: center;
+    padding: 2px 0;
+    font-size: 5px;
   }
 </style>

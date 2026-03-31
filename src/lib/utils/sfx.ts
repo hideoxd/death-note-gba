@@ -15,6 +15,8 @@ let listenersAttached = false;
 let lastBlipAt = 0;
 let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
 let heartbeatStep = 0;
+let heartbeatDeadlineMs = 0;
+let lVoiceLastAt = 0;
 
 const vibrate = (durationMs = 14): void => {
   if (!browser || typeof navigator === 'undefined') {
@@ -155,6 +157,33 @@ export const playNotebookScribble = (): void => {
   }
 };
 
+export const playInkScratch = (): void => {
+  const now = Date.now();
+  if (now - lastBlipAt < 16) {
+    return;
+  }
+
+  lastBlipAt = now;
+  const level = getSfxGain();
+  if (level <= 0) {
+    return;
+  }
+
+  const base = 920 + Math.random() * 220;
+  playTone({
+    frequency: base,
+    durationMs: 14,
+    type: 'sawtooth',
+    gain: 0.008 * level
+  });
+  playTone({
+    frequency: base * 0.45,
+    durationMs: 18,
+    type: 'square',
+    gain: 0.004 * level
+  });
+};
+
 export const playGlitchBoot = (): void => {
   const level = getSfxGain();
   if (level <= 0) {
@@ -174,30 +203,61 @@ export const playGlitchBoot = (): void => {
   }
 };
 
-export const playHeartbeatLoop = (): void => {
-  if (heartbeatInterval) {
-    return;
-  }
-
+export const playHeartbeatLoop = (deadlineMs?: number): void => {
   const level = getSfxGain();
   if (level <= 0) {
     return;
   }
 
+  if (heartbeatInterval) {
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = null;
+  }
+
+  heartbeatDeadlineMs = typeof deadlineMs === 'number' ? deadlineMs : 0;
+
   heartbeatStep = 0;
-  heartbeatInterval = setInterval(() => {
-    const gain = 0.018 * getSfxGain();
-    const accent = heartbeatStep % 2 === 0 ? 1 : 0.72;
+
+  const tick = () => {
+    const runtimeGain = getSfxGain();
+    if (runtimeGain <= 0 || !heartbeatInterval) {
+      return;
+    }
+
+    const now = Date.now();
+    const remainingRatio =
+      heartbeatDeadlineMs > 0
+        ? Math.max(0, Math.min(1, (heartbeatDeadlineMs - now) / 40_000))
+        : 1;
+    const urgency = 1 - remainingRatio;
+    const bpm = 72 + urgency * 88;
+    const intervalMs = Math.max(280, Math.round(60_000 / bpm));
+    const gain = (0.015 + urgency * 0.022) * runtimeGain;
+    const accent = heartbeatStep % 2 === 0 ? 1.08 : 0.82;
 
     playTone({
-      frequency: 94 + (heartbeatStep % 3) * 4,
-      durationMs: 75,
+      frequency: 86 + urgency * 24 + (heartbeatStep % 2) * 3,
+      durationMs: Math.max(54, Math.round(84 - urgency * 18)),
       type: 'sine',
       gain: gain * accent
     });
 
+    if (heartbeatStep % 2 === 0) {
+      playTone({
+        frequency: 58 + urgency * 12,
+        durationMs: 110,
+        type: 'triangle',
+        gain: gain * 0.36
+      });
+    }
+
     heartbeatStep += 1;
-  }, 620);
+    clearInterval(heartbeatInterval);
+    heartbeatInterval = setInterval(tick, intervalMs);
+  };
+
+  heartbeatInterval = setInterval(tick, 620);
+  tick();
 };
 
 export const stopHeartbeatLoop = (): void => {
@@ -208,6 +268,7 @@ export const stopHeartbeatLoop = (): void => {
   clearInterval(heartbeatInterval);
   heartbeatInterval = null;
   heartbeatStep = 0;
+  heartbeatDeadlineMs = 0;
 };
 
 export const playHeartbeatThud = (): void => {
@@ -223,4 +284,35 @@ export const playHeartbeatThud = (): void => {
     gain: 0.045 * level
   });
   vibrate(24);
+};
+
+export const playLInterventionVoice = (): void => {
+  const now = Date.now();
+  if (now - lVoiceLastAt < 1600) {
+    return;
+  }
+
+  lVoiceLastAt = now;
+  const level = getSfxGain();
+  if (level <= 0) {
+    return;
+  }
+
+  const steps = [130, 120, 112, 106];
+  for (let i = 0; i < steps.length; i += 1) {
+    window.setTimeout(() => {
+      playTone({
+        frequency: steps[i],
+        durationMs: 170,
+        type: 'sawtooth',
+        gain: 0.016 * level
+      });
+      playTone({
+        frequency: steps[i] * 1.5,
+        durationMs: 120,
+        type: 'square',
+        gain: 0.008 * level
+      });
+    }, i * 130);
+  }
 };

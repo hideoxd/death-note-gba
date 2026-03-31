@@ -36,6 +36,7 @@ const normalizeSnapshot = (snapshot: GameState): GameState => {
   const targets = hasTargets
     ? rawInvestigation.targets.map((target, index) => ({
         ...target,
+        isDecoy: Boolean((target as { isDecoy?: unknown }).isDecoy),
         region: isRegion((target as { region?: unknown }).region)
           ? (target as { region: (typeof regions)[number] }).region
           : regions[index % regions.length]
@@ -51,6 +52,9 @@ const normalizeSnapshot = (snapshot: GameState): GameState => {
   const pendingCauseBlocks = normalizeFlagValue(partial.flags?.pending_cause_blocks);
   const pendingCauseDeadlineMs = normalizeFlagValue(partial.flags?.pending_cause_deadline_ms);
   const shinigamiEyeActive = normalizeFlagValue(partial.flags?.shinigami_eye_active);
+  const suspicionAlertSeq = normalizeFlagValue(partial.flags?.suspicion_alert_seq);
+  const suspicionAlertReason = normalizeFlagValue(partial.flags?.suspicion_alert_reason);
+  const deathFlashSeq = normalizeFlagValue(partial.flags?.death_flash_seq);
 
   const next: GameState = {
     ...base,
@@ -63,7 +67,10 @@ const normalizeSnapshot = (snapshot: GameState): GameState => {
       pending_cause_blocks: typeof pendingCauseBlocks === 'number' ? Math.max(0, Math.floor(pendingCauseBlocks)) : 0,
       pending_cause_deadline_ms:
         typeof pendingCauseDeadlineMs === 'number' ? Math.max(0, Math.floor(pendingCauseDeadlineMs)) : 0,
-      shinigami_eye_active: typeof shinigamiEyeActive === 'boolean' ? shinigamiEyeActive : false
+      shinigami_eye_active: typeof shinigamiEyeActive === 'boolean' ? shinigamiEyeActive : false,
+      suspicion_alert_seq: typeof suspicionAlertSeq === 'number' ? Math.max(0, Math.floor(suspicionAlertSeq)) : 0,
+      suspicion_alert_reason: typeof suspicionAlertReason === 'string' ? suspicionAlertReason : '',
+      death_flash_seq: typeof deathFlashSeq === 'number' ? Math.max(0, Math.floor(deathFlashSeq)) : 0
     },
     stats: {
       ...base.stats,
@@ -82,6 +89,7 @@ const normalizeSnapshot = (snapshot: GameState): GameState => {
       eliminationLog: Array.isArray(rawInvestigation?.eliminationLog)
         ? rawInvestigation.eliminationLog.map((entry, index) => ({
             ...entry,
+            decoy: Boolean((entry as { decoy?: unknown }).decoy),
             region: isRegion((entry as { region?: unknown }).region)
               ? (entry as { region: (typeof regions)[number] }).region
               : regions[index % regions.length]

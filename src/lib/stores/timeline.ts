@@ -24,12 +24,13 @@ export const worldTimeline = derived(gameState, ($state): TimelineEntry[] => {
 
   const eliminationLog = $state.investigation.eliminationLog;
   const latestElimination = eliminationLog.length > 0 ? eliminationLog[eliminationLog.length - 1] : undefined;
+  const decoyHits = eliminationLog.filter((entry) => entry.decoy).length;
   if (latestElimination) {
     entries.push({
       id: 'timeline-elimination',
       headline: 'NPA Breaking',
-      detail: `${latestElimination.alias} found dead by ${formatCause(latestElimination.cause)}.`,
-      tone: latestElimination.cause === 'heart-attack' ? 'urgent' : 'danger'
+      detail: `${latestElimination.alias} found dead by ${formatCause(latestElimination.cause)}.${latestElimination.decoy ? ' Decoy status confirmed by task force.' : ''}`,
+      tone: latestElimination.decoy ? 'critical' : latestElimination.cause === 'heart-attack' ? 'urgent' : 'danger'
     });
   } else {
     entries.push({
@@ -44,8 +45,8 @@ export const worldTimeline = derived(gameState, ($state): TimelineEntry[] => {
   entries.push({
     id: 'timeline-targets',
     headline: 'Investigation Desk',
-    detail: `${unresolvedTargets} active target${unresolvedTargets === 1 ? '' : 's'} remain under review.`,
-    tone: unresolvedTargets <= 1 ? 'urgent' : 'neutral'
+    detail: `${unresolvedTargets} active target${unresolvedTargets === 1 ? '' : 's'} remain under review. Decoy hits: ${decoyHits}.`,
+    tone: decoyHits > 0 || unresolvedTargets <= 1 ? 'urgent' : 'neutral'
   });
 
   if (latestElimination) {
@@ -55,12 +56,13 @@ export const worldTimeline = derived(gameState, ($state): TimelineEntry[] => {
       .length;
 
     if (regionalStreak >= 2) {
-    entries.push({
-      id: 'timeline-region-alert',
-      headline: `${latestElimination.region.toUpperCase()} Alert`,
-      detail: 'Clustered deaths in one region trigger focused geo-profiling by L.',
-      tone: 'critical'
-    });
+      entries.push({
+        id: 'timeline-region-alert',
+        headline: `${latestElimination.region.toUpperCase()} Alert`,
+        detail: 'Clustered deaths in one region trigger focused geo-profiling by L.',
+        tone: 'critical'
+      });
+    }
   }
 
   if (
@@ -71,7 +73,7 @@ export const worldTimeline = derived(gameState, ($state): TimelineEntry[] => {
     entries.push({
       id: 'timeline-cause-window',
       headline: 'Death Note Rule III',
-      detail: `Cause override window active: ${Math.max(0, $state.flags.pending_cause_blocks)} block(s) before default heart attack.`,
+      detail: `Cause override window active: ${Math.max(0, $state.flags.pending_cause_blocks)} block(s) before default heart attack. 40-second countdown in progress.`,
       tone: 'urgent'
     });
   }
@@ -83,7 +85,6 @@ export const worldTimeline = derived(gameState, ($state): TimelineEntry[] => {
       detail: 'Forbidden perception active. Identities are visible at severe life cost.',
       tone: 'danger'
     });
-  }
   }
 
   entries.push({

@@ -1,13 +1,17 @@
 <script lang="ts">
   import { gameState } from '$lib/stores/gameState';
-  import { clockLabel, mode, suspicionPercent } from '$lib/stores/selectors';
+  import { clockLabel, mode, suspicionPercent, shinigamiEyeActive } from '$lib/stores/selectors';
+  import { suspenseMeterMotion } from '$lib/stores/suspicionMotion';
 
   $: riskClass = $suspicionPercent >= 85 ? 'critical' : $suspicionPercent >= 60 ? 'high' : 'stable';
   $: willpowerPercent = Math.round($gameState.stats.willpower);
   $: batteryCells = [25, 50, 75, 95].map((threshold) => willpowerPercent >= threshold);
+  $: eyeClass = $shinigamiEyeActive ? 'eye-on' : 'eye-off';
+  $: stripWidth = Math.max(0, Math.min(100, Math.round($suspenseMeterMotion)));
+  $: stripSpike = $gameState.suspicion.trend >= 8;
 </script>
 
-<header class="top-bar">
+<header class="top-bar" class:spike={stripSpike}>
   <span class="pill mode-pill">
     <span class="dot mode-dot"></span>
     {$mode === 'anime-canon' ? 'CANON' : 'DVRG'}
@@ -25,10 +29,18 @@
     </span>
     W:{willpowerPercent}
   </span>
+  <span class="pill eye-pill {eyeClass}">
+    {$shinigamiEyeActive ? 'EYE ON' : 'EYE OFF'}
+  </span>
+
+  <div class="suspicion-strip" aria-hidden="true">
+    <div class="suspicion-strip-fill {riskClass}" style="width: {stripWidth}%"></div>
+  </div>
 </header>
 
 <style>
   .top-bar {
+    position: relative;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -37,6 +49,40 @@
     border-bottom: 1px solid rgba(200, 0, 0, 0.15);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
     flex-shrink: 0;
+  }
+
+  .suspicion-strip {
+    position: absolute;
+    left: 2px;
+    right: 2px;
+    bottom: 0;
+    height: 2px;
+    border-top: 1px solid rgba(200, 0, 0, 0.14);
+    background: rgba(0, 0, 0, 0.32);
+    transform: translateY(1px);
+    transition: transform 220ms ease-out;
+  }
+
+  .top-bar.spike .suspicion-strip {
+    transform: translateY(-1px);
+  }
+
+  .suspicion-strip-fill {
+    height: 100%;
+    transition: width 260ms ease-out;
+  }
+
+  .suspicion-strip-fill.stable {
+    background: linear-gradient(90deg, #564848, #726060);
+  }
+
+  .suspicion-strip-fill.high {
+    background: linear-gradient(90deg, #8a3a24, #bf5032);
+  }
+
+  .suspicion-strip-fill.critical {
+    background: linear-gradient(90deg, #ad1414, #ef3b3b);
+    box-shadow: 0 0 4px rgba(239, 59, 59, 0.35);
   }
 
   .pill {
@@ -98,6 +144,22 @@
     color: #84b688;
   }
 
+  .eye-pill {
+    min-width: 28px;
+    justify-content: center;
+    color: #7c6f6f;
+  }
+
+  .eye-pill.eye-on {
+    color: #dc7f7f;
+    text-shadow: 0 0 4px rgba(220, 70, 70, 0.35);
+    animation: eye-pulse 480ms steps(2, end) infinite;
+  }
+
+  .eye-pill.eye-off {
+    color: #6b5e5e;
+  }
+
   .battery-icon {
     width: 11px;
     height: 5px;
@@ -131,5 +193,15 @@
   @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
+  }
+
+  @keyframes eye-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.56;
+    }
   }
 </style>

@@ -82,6 +82,12 @@ const deathCauseSuspicionDelta: Record<DeathCause, number> = {
 const regionBiasOrder: InvestigationRegion[] = ['kanto', 'kansai', 'tohoku', 'kyushu'];
 const regionalSpikePenalty = 3;
 const causeTimeoutBlocks = 2;
+const schoolHourBlocks: TimeBlock[] = ['morning', 'afternoon'];
+const decoyExecutionPenalty = 18;
+const schoolHourExecutionPenalty = 9;
+const lInterventionThreshold = 85;
+const shinigamiEyeDrainPerBlock = 6;
+const shinigamiEyeActivationCost = 8;
 
 const targetAliasPool = [
   'Insider Trading Broker',
@@ -107,6 +113,7 @@ const targetNamePool = [
 
 const buildTargetWave = (wave: number): GameState['investigation']['targets'] => {
   const count = 4;
+  const decoyIndex = Math.abs(wave + 1) % count;
 
   return Array.from({ length: count }, (_, index) => {
     const alias = targetAliasPool[(wave + index - 1) % targetAliasPool.length];
@@ -118,12 +125,96 @@ const buildTargetWave = (wave: number): GameState['investigation']['targets'] =>
       alias,
       trueName,
       region,
+      isDecoy: index === decoyIndex,
       knownName: false,
       knownFace: false,
       faceSource: null,
       eliminated: false
     };
   });
+};
+
+const nextFlagCounter = (value: boolean | number | string | undefined): number => {
+  if (typeof value !== 'number') {
+    return 1;
+  }
+
+  return Math.max(0, Math.floor(value)) + 1;
+};
+
+const triggerLInterventionIfNeeded = (before: GameState, after: GameState, reason: string): GameState => {
+  const crossedThreshold = before.suspicion.meter < lInterventionThreshold && after.suspicion.meter >= lInterventionThreshold;
+  const severeSpike = after.suspicion.meter >= 92 && after.suspicion.meter - before.suspicion.meter >= 6;
+
+  if (!crossedThreshold && !severeSpike) {
+    return after;
+  }
+
+  return {
+    ...after,
+    flags: {
+      ...after.flags,
+      suspicion_alert_seq: nextFlagCounter(after.flags.suspicion_alert_seq),
+      suspicion_alert_reason: reason
+    }
+  };
+};
+
+const triggerDeathPulse = (state: GameState): GameState => {
+  return {
+    ...state,
+    flags: {
+      ...state.flags,
+      death_flash_seq: nextFlagCounter(state.flags.death_flash_seq)
+    }
+  };
+};
+
+const applyExecutionContextPenalties = (
+  state: GameState,
+  target: GameState['investigation']['targets'][number]
+): GameState => {
+  let next = state;
+
+  if (target.isDecoy) {
+    next = applySuspicionDelta(next, decoyExecutionPenalty, 'execution_decoy_trap');
+    next = pushLog(next, 'system', `Decoy trap sprung: ${target.alias} was bait prepared by L's team.`);
+  }
+
+  if (schoolHourBlocks.includes(state.clock.block)) {
+    next = applySuspicionDelta(next, schoolHourExecutionPenalty, 'execution_school_hours');
+    next = pushLog(next, 'system', 'School-hour execution pattern aligns too closely with your schedule.');
+  }
+
+  return next;
+};
+
+const drainShinigamiEyeWillpower = (state: GameState): GameState => {
+  if (state.flags.shinigami_eye_active !== true) {
+    return state;
+  }
+
+  const drainedWillpower = clamp(state.stats.willpower - shinigamiEyeDrainPerBlock, 0, 100);
+  let next: GameState = {
+    ...state,
+    stats: {
+      ...state.stats,
+      willpower: drainedWillpower
+    }
+  };
+
+  if (drainedWillpower <= 0) {
+    next = {
+      ...next,
+      flags: {
+        ...next.flags,
+        shinigami_eye_active: false
+      }
+    };
+    next = pushLog(next, 'system', 'Shinigami Eyes collapse as your remaining life force is exhausted.');
+  }
+
+  return next;
 };
 
 const getRecentRegionalEliminations = (state: GameState, region: InvestigationRegion): number => {
@@ -218,6 +309,7 @@ const resolvePendingCauseTimeout = (state: GameState): GameState => {
           alias: target.alias,
           trueName: target.trueName,
           region: target.region,
+          decoy: target.isDecoy,
           cause: 'heart-attack',
           day: state.clock.day,
           block: state.clock.block
@@ -240,6 +332,9 @@ const resolvePendingCauseTimeout = (state: GameState): GameState => {
     next = pushLog(next, 'system', `Regional spike in ${target.region.toUpperCase()} raises L's suspicion.`);
   }
 
+  next = applyExecutionContextPenalties(next, target);
+  next = triggerLInterventionIfNeeded(state, next, target.isDecoy ? 'decoy_timeout' : 'timeout_pattern');
+  next = triggerDeathPulse(next);
   next = pushLog(next, 'system', `40-second limit elapsed. ${target.trueName} defaults to Heart Attack.`);
   return next;
 };
@@ -247,6 +342,7 @@ const resolvePendingCauseTimeout = (state: GameState): GameState => {
 const applyPendingCauseCountdown = (state: GameState): GameState => {
   const pendingTargetId = state.flags.pending_cause_target;
   const pendingBlocks = state.flags.pending_cause_blocks;
+  const pendingDeadlineMs = state.flags.pending_cause_deadline_ms;
 
   if (typeof pendingTargetId !== 'string' || !pendingTargetId) {
     return state;
@@ -256,24 +352,32 @@ const applyPendingCauseCountdown = (state: GameState): GameState => {
     return state;
   }
 
+  let next = state;
+
   if (pendingBlocks > 0) {
-    const decremented = pendingBlocks - 1;
-    const decrementedState: GameState = {
+    next = {
       ...state,
       flags: {
         ...state.flags,
-        pending_cause_blocks: decremented
+        pending_cause_blocks: pendingBlocks - 1
       }
     };
-
-    if (decremented > 0) {
-      return decrementedState;
-    }
-
-    state = decrementedState;
   }
 
-  return resolvePendingCauseTimeout(state);
+  if (typeof pendingDeadlineMs === 'number' && pendingDeadlineMs > 0) {
+    if (Date.now() < pendingDeadlineMs) {
+      return next;
+    }
+
+    return resolvePendingCauseTimeout(next);
+  }
+
+  const remainingBlocks = typeof next.flags.pending_cause_blocks === 'number' ? next.flags.pending_cause_blocks : 0;
+  if (remainingBlocks > 0) {
+    return next;
+  }
+
+  return resolvePendingCauseTimeout(next);
 };
 
 const refreshInvestigationWave = (state: GameState): GameState => {
@@ -315,6 +419,7 @@ const advanceTimeStep = (state: GameState, blocks = 1): GameState => {
     }
   };
 
+  next = drainShinigamiEyeWillpower(next);
   next = recalculateSuspicion(next);
   next = evaluateCanonTimeline(next);
   next = refreshInvestigationWave(next);
@@ -729,6 +834,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
               alias: target.alias,
               trueName: target.trueName,
               region: target.region,
+              decoy: target.isDecoy,
               cause,
               day: state.clock.day,
               block: state.clock.block
@@ -751,6 +857,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         next = pushLog(next, 'system', `Regional spike in ${target.region.toUpperCase()} raises L's suspicion.`);
       }
 
+      next = applyExecutionContextPenalties(next, target);
+      next = triggerLInterventionIfNeeded(state, next, target.isDecoy ? 'decoy_execution' : `execution_${cause}`);
       next = pushLog(next, 'action', `Judgment written: ${target.trueName} (${deathCauseLabels[cause]}).`);
 
       if (next.investigation.targets.every((entry) => entry.eliminated)) {
@@ -792,7 +900,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         };
       }
 
-      if (state.stats.willpower <= 1) {
+      if (state.stats.willpower <= shinigamiEyeActivationCost) {
         return pushLog(state, 'system', 'Shinigami Eyes failed: insufficient life force.');
       }
 
@@ -800,7 +908,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         ...state,
         stats: {
           ...state.stats,
-          willpower: Math.max(0, Math.floor(state.stats.willpower / 2))
+          willpower: Math.max(0, state.stats.willpower - shinigamiEyeActivationCost)
         },
         flags: {
           ...state.flags,
@@ -808,7 +916,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         }
       };
 
-      return pushLog(next, 'system', 'Shinigami Eyes activated. Half of your life force is consumed.');
+      return pushLog(next, 'system', 'Shinigami Eyes activated. Willpower now drains each time block.');
     }
 
     case 'SELECT_CHOICE': {

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
   import { fade } from 'svelte/transition';
 
 import GBAFrame from '$lib/components/shell/GBAFrame.svelte';
@@ -29,9 +29,23 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
   import { gameState } from '$lib/stores/gameState';
   import { uiState } from '$lib/stores/uiState';
   import { dualModeView, isGameOver, phase, shinigamiEyeActive } from '$lib/stores/selectors';
+  import { playHeartbeatThud, playLInterventionVoice } from '$lib/utils/sfx';
 
   let redirectingToTitle = false;
   let showRulebook = false;
+  let pressedStart = false;
+  let pressedSelect = false;
+  let pressedA = false;
+  let pressedB = false;
+  let deathFlashActive = false;
+  let lGlitchVisible = false;
+  let lGlitchReason = '';
+
+  let deathFlashTimer: ReturnType<typeof setTimeout> | null = null;
+  let lGlitchTimer: ReturnType<typeof setTimeout> | null = null;
+  let previousAlertSeq = 0;
+  let previousDeathFlashSeq = 0;
+  let previousSuspicionMeter = 0;
 
   $: if (browser && $phase === 'title' && !redirectingToTitle) {
     redirectingToTitle = true;
@@ -72,21 +86,96 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
       return;
     }
 
-    const nextMode = $dualModeView === 'kira' ? 'l' : 'kira';
-    gameState.dispatch({ type: 'APPLY_EFFECTS', effects: [{ type: 'flag.set', key: 'dual_mode', value: nextMode }] });
+    if ($gameState.phase === 'playing') {
+      gameState.toggleShinigamiEye();
+    }
   };
 
   const closeRulebook = () => {
     showRulebook = false;
   };
 
+  const clearButtonStates = () => {
+    pressedStart = false;
+    pressedSelect = false;
+    pressedA = false;
+    pressedB = false;
+  };
+
+  const clearDeathFlashTimer = () => {
+    if (!deathFlashTimer) {
+      return;
+    }
+
+    clearTimeout(deathFlashTimer);
+    deathFlashTimer = null;
+  };
+
+  const clearLGlitchTimer = () => {
+    if (!lGlitchTimer) {
+      return;
+    }
+
+    clearTimeout(lGlitchTimer);
+    lGlitchTimer = null;
+  };
+
+  const triggerDeathFlash = () => {
+    deathFlashActive = true;
+    clearDeathFlashTimer();
+    deathFlashTimer = setTimeout(() => {
+      deathFlashActive = false;
+    }, 420);
+  };
+
+  const triggerLGlitch = (reason: string) => {
+    lGlitchReason = reason;
+    lGlitchVisible = true;
+    playLInterventionVoice();
+    clearLGlitchTimer();
+    lGlitchTimer = setTimeout(() => {
+      lGlitchVisible = false;
+      lGlitchReason = '';
+    }, 2100);
+  };
+
+  const formatGlitchReason = (reason: string): string => {
+    if (!reason) {
+      return 'PROFILE MATCH';
+    }
+
+    return reason.replace(/_/g, ' ').toUpperCase();
+  };
+
   onMount(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
+
+      const target = event.target as HTMLElement | null;
+      const isTypingTarget = Boolean(
+        target &&
+          (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+      );
+
+      if (isTypingTarget) {
+        return;
+      }
+
+      if (key === 'enter') {
+        pressedStart = true;
+      } else if (key === 'shift') {
+        pressedSelect = true;
+      } else if (key === 'z') {
+        pressedA = true;
+      } else if (key === 'x') {
+        pressedB = true;
+      }
+
       if (event.repeat || $gameState.phase === 'game-over') {
         return;
       }
 
-      if (event.key === 'Escape' || event.key.toLowerCase() === 'p') {
+      if (event.key === 'Escape' || key === 'p') {
         togglePause();
         return;
       }
@@ -97,13 +186,13 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
         return;
       }
 
-      if (event.key.toLowerCase() === 'z') {
+      if (key === 'z') {
         event.preventDefault();
         triggerA();
         return;
       }
 
-      if (event.key.toLowerCase() === 'x') {
+      if (key === 'x') {
         event.preventDefault();
         triggerB();
         return;
@@ -114,39 +203,81 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
         triggerSelect();
         return;
       }
+    };
 
-      if (event.key.toLowerCase() === 's' && event.ctrlKey && event.altKey) {
-        event.preventDefault();
-        gameState.toggleShinigamiEye();
-        return;
-      }
+    const onKeyUp = (event: KeyboardEvent) => {
+      const key = event.key.toLowerCase();
 
-      if (event.key.toLowerCase() === 'l' && event.ctrlKey && event.altKey) {
-        event.preventDefault();
-        gameState.toggleShinigamiEye();
+      if (key === 'enter') {
+        pressedStart = false;
+      } else if (key === 'shift') {
+        pressedSelect = false;
+      } else if (key === 'z') {
+        pressedA = false;
+      } else if (key === 'x') {
+        pressedB = false;
       }
     };
 
     window.addEventListener('keydown', onKeyDown);
+    window.addEventListener('keyup', onKeyUp);
+    window.addEventListener('blur', clearButtonStates);
 
     const body = document.body;
     const unsubscribe = gameState.subscribe((state) => {
       body.classList.toggle('phase-l-alert', state.suspicion.meter >= 60 && state.suspicion.meter < 85);
       body.classList.toggle('phase-l-critical', state.suspicion.meter >= 85);
       body.classList.toggle('shinigami-eye', state.flags.shinigami_eye_active === true);
+
+      if (state.suspicion.meter >= 85 && previousSuspicionMeter < 85) {
+        triggerLGlitch('suspicion threshold');
+      }
+      previousSuspicionMeter = state.suspicion.meter;
+
+      const alertSeq = typeof state.flags.suspicion_alert_seq === 'number' ? Math.max(0, state.flags.suspicion_alert_seq) : 0;
+      if (alertSeq > previousAlertSeq) {
+        previousAlertSeq = alertSeq;
+        const reason = typeof state.flags.suspicion_alert_reason === 'string' ? state.flags.suspicion_alert_reason : '';
+        triggerLGlitch(reason);
+      }
+
+      const deathSeq = typeof state.flags.death_flash_seq === 'number' ? Math.max(0, state.flags.death_flash_seq) : 0;
+      if (deathSeq > previousDeathFlashSeq) {
+        previousDeathFlashSeq = deathSeq;
+        playHeartbeatThud();
+        triggerDeathFlash();
+      }
     });
 
     return () => {
       unsubscribe();
       document.body.classList.remove('phase-l-alert', 'phase-l-critical', 'shinigami-eye');
       window.removeEventListener('keydown', onKeyDown);
+      window.removeEventListener('keyup', onKeyUp);
+      window.removeEventListener('blur', clearButtonStates);
+      clearButtonStates();
     };
+  });
+
+  onDestroy(() => {
+    clearDeathFlashTimer();
+    clearLGlitchTimer();
   });
 </script>
 
 <main class="game-page">
-  <GBAFrame title="Death Note Gameplay" on:start={triggerStart} on:select={triggerSelect} on:a={triggerA} on:b={triggerB}>
-    <GBAScreen>
+  <GBAFrame
+    title="Death Note Gameplay"
+    pressedStart={pressedStart}
+    pressedSelect={pressedSelect}
+    pressedA={pressedA}
+    pressedB={pressedB}
+    on:start={triggerStart}
+    on:select={triggerSelect}
+    on:a={triggerA}
+    on:b={triggerB}
+  >
+    <GBAScreen glitchActive={deathFlashActive || lGlitchVisible}>
       <section class="game-screen">
         <TopBar />
         <CanonTimelineBar />
@@ -191,6 +322,20 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
         {/if}
 
         <StartupOverlay />
+
+        {#if deathFlashActive}
+          <div class="death-flash" aria-hidden="true"></div>
+        {/if}
+
+        {#if lGlitchVisible}
+          <div class="l-intervention" aria-live="assertive">
+            <div class="l-card">
+              <span class="glyph">L</span>
+              <span class="line">I'VE FOUND YOU.</span>
+              <span class="reason">{formatGlitchReason(lGlitchReason)}</span>
+            </div>
+          </div>
+        {/if}
       </section>
     </GBAScreen>
   </GBAFrame>
@@ -317,6 +462,108 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
     50%,
     100% {
       opacity: 0.45;
+    }
+  }
+
+  .death-flash {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 45;
+    background:
+      radial-gradient(circle at 50% 50%, rgba(255, 80, 80, 0.34) 0%, rgba(160, 0, 0, 0.46) 42%, rgba(20, 0, 0, 0.72) 100%),
+      repeating-linear-gradient(180deg, rgba(255, 0, 0, 0.08) 0 1px, rgba(0, 0, 0, 0.15) 1px 2px);
+    animation: death-flash 420ms ease-out;
+  }
+
+  .l-intervention {
+    position: absolute;
+    inset: 0;
+    z-index: 46;
+    display: grid;
+    place-items: center;
+    pointer-events: none;
+    background: radial-gradient(circle at 50% 50%, rgba(40, 20, 20, 0.12), rgba(10, 4, 6, 0.72));
+    animation: l-overlay 2100ms steps(2, end);
+  }
+
+  .l-card {
+    width: 134px;
+    border: 1px solid rgba(210, 80, 80, 0.42);
+    background: linear-gradient(180deg, rgba(20, 7, 9, 0.94), rgba(8, 4, 6, 0.95));
+    box-shadow:
+      0 0 10px rgba(200, 0, 0, 0.26),
+      inset 0 0 10px rgba(0, 0, 0, 0.7);
+    padding: 6px 8px;
+    display: grid;
+    gap: 2px;
+    justify-items: center;
+    text-align: center;
+    animation: l-card-glitch 320ms steps(2, end) infinite;
+  }
+
+  .glyph {
+    font-family: var(--font-death-note, serif);
+    font-size: 22px;
+    color: #e2cbcb;
+    line-height: 1;
+    text-shadow:
+      -1px 0 rgba(255, 0, 0, 0.45),
+      1px 0 rgba(80, 160, 220, 0.35),
+      0 0 8px rgba(200, 0, 0, 0.25);
+  }
+
+  .line {
+    font-family: var(--font-pixel, monospace);
+    font-size: 6px;
+    letter-spacing: 0.6px;
+    color: #d9a8a8;
+    text-transform: uppercase;
+  }
+
+  .reason {
+    font-family: var(--font-pixel, monospace);
+    font-size: 4px;
+    color: #8e8282;
+    letter-spacing: 0.3px;
+  }
+
+  @keyframes death-flash {
+    0% {
+      opacity: 0;
+      transform: scale(1.01);
+    }
+    28% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1);
+    }
+  }
+
+  @keyframes l-card-glitch {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+    33% {
+      transform: translate(-0.8px, 0.5px);
+    }
+    66% {
+      transform: translate(0.9px, -0.5px);
+    }
+  }
+
+  @keyframes l-overlay {
+    0%,
+    100% {
+      opacity: 0;
+    }
+    6%,
+    94% {
+      opacity: 1;
     }
   }
 </style>

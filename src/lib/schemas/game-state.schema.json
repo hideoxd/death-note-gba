@@ -113,6 +113,9 @@
         "pending_cause_blocks": { "type": "number" },
         "pending_cause_deadline_ms": { "type": "number" },
         "shinigami_eye_active": { "type": "boolean" },
+        "suspicion_alert_seq": { "type": "number" },
+        "suspicion_alert_reason": { "type": "string" },
+        "death_flash_seq": { "type": "number" },
         "dual_mode": { "type": "string", "enum": ["kira", "l"] }
       }
     },
@@ -139,6 +142,7 @@
               "alias",
               "trueName",
               "region",
+              "isDecoy",
               "knownName",
               "knownFace",
               "faceSource",
@@ -149,6 +153,7 @@
               "alias": { "type": "string" },
               "trueName": { "type": "string" },
               "region": { "type": "string", "enum": ["kanto", "kansai", "tohoku", "kyushu"] },
+              "isDecoy": { "type": "boolean" },
               "knownName": { "type": "boolean" },
               "knownFace": { "type": "boolean" },
               "faceSource": {
@@ -170,6 +175,7 @@
               "alias": { "type": "string" },
               "trueName": { "type": "string" },
               "region": { "type": "string", "enum": ["kanto", "kansai", "tohoku", "kyushu"] },
+              "decoy": { "type": "boolean" },
               "cause": {
                 "type": "string",
                 "enum": ["heart-attack", "accident", "poisoning", "suicide"]

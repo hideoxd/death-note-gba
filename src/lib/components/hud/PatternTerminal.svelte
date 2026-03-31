@@ -12,6 +12,8 @@
   <p>Total: {$patternData.total}</p>
   <p>Peak Block: {$patternData.dominantBlock.toUpperCase()}</p>
   <p>Peak Region: {$patternData.dominantRegion.toUpperCase()}</p>
+  <p>Decoys: {$patternData.decoyHits}</p>
+  <p>School: {$patternData.schoolHourHits}</p>
   <p>MOR: {pct($patternData.byBlock.morning, $patternData.total)}</p>
   <p>AFT: {pct($patternData.byBlock.afternoon, $patternData.total)}</p>
   <p>NGT: {pct($patternData.byBlock.night, $patternData.total)}</p>

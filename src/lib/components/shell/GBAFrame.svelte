@@ -3,6 +3,10 @@
   import { playPlasticClick, playTextBlip, vibrateTap } from '$lib/utils/sfx';
 
   export let title = 'Death Note: Kira Protocol';
+  export let pressedStart = false;
+  export let pressedSelect = false;
+  export let pressedA = false;
+  export let pressedB = false;
 
   const dispatch = createEventDispatcher<{
     start: void;
@@ -89,13 +93,32 @@
     <!-- Right controls -->
     <div class="buttons-area">
       <div class="action-buttons">
-        <button type="button" class="button b-btn" aria-label="B button" on:click={triggerB}><span>B</span></button>
-        <button type="button" class="button a-btn" aria-label="A button" on:click={triggerA}><span>A</span></button>
+        <button
+          type="button"
+          class="button b-btn"
+          class:pressed={pressedB}
+          aria-label="B button"
+          title="B - X"
+          on:click={triggerB}
+        >
+          <span>B</span>
+        </button>
+        <button
+          type="button"
+          class="button a-btn"
+          class:pressed={pressedA}
+          aria-label="A button"
+          title="A - Z"
+          on:click={triggerA}
+        >
+          <span>A</span>
+        </button>
       </div>
       <div class="start-select">
         <button
           type="button"
           class="ss-btn"
+          class:pressed={pressedSelect}
           aria-label="Select button (Shift)"
           title="SELECT - Shift"
           on:click={triggerSelect}
@@ -105,6 +128,7 @@
         <button
           type="button"
           class="ss-btn"
+          class:pressed={pressedStart}
           aria-label="Start button (Enter)"
           title="START - Enter"
           on:click={triggerStart}
@@ -257,8 +281,7 @@
   }
 
   .dpad-v:active,
-  .dpad-h:active,
-  .button:active {
+  .dpad-h:active {
     transform: scale(0.95);
   }
 
@@ -321,6 +344,16 @@
     cursor: pointer;
     appearance: none;
     padding: 0;
+    transition: transform 80ms ease-out, box-shadow 120ms ease-out;
+  }
+
+  .button:active,
+  .button.pressed {
+    transform: translateY(2px) scale(0.96);
+    box-shadow:
+      inset 0 1px 2px rgba(255, 120, 120, 0.2),
+      inset 0 -2px 4px rgba(0, 0, 0, 0.65),
+      0 2px 3px rgba(0, 0, 0, 0.5);
   }
 
   .button span {
@@ -366,6 +399,13 @@
 
   .ss-btn:active {
     transform: translateY(1px);
+  }
+
+  .ss-btn.pressed {
+    transform: translateY(1px);
+    box-shadow:
+      inset 0 1px 3px rgba(0, 0, 0, 0.8),
+      0 0 0 rgba(255, 255, 255, 0);
   }
 
   .ss-btn span {

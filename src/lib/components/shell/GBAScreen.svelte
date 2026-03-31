@@ -1,8 +1,10 @@
 <script lang="ts">
   import CRTOverlay from '$lib/components/shell/CRTOverlay.svelte';
+
+  export let glitchActive = false;
 </script>
 
-<div class="screen-root">
+<div class="screen-root" class:glitch-active={glitchActive}>
   <div class="screen-pixel-stage">
     <div class="screen-content">
       <slot />
@@ -44,6 +46,33 @@
     box-shadow:
       inset 0 0 0 1px rgba(200, 0, 0, 0.12),
       inset 0 0 30px rgba(0, 0, 0, 0.6);
+  }
+
+  .glitch-active .screen-content {
+    animation: screen-kira-glitch 340ms steps(2, end);
+  }
+
+  @keyframes screen-kira-glitch {
+    0% {
+      filter: hue-rotate(0deg) saturate(1) brightness(1);
+      transform: scale(var(--gba-scale));
+    }
+    20% {
+      filter: hue-rotate(-12deg) saturate(1.35) brightness(1.12);
+      transform: translate(-0.5px, 0.3px) scale(var(--gba-scale));
+    }
+    40% {
+      filter: hue-rotate(8deg) saturate(1.5) brightness(1.06);
+      transform: translate(0.6px, -0.4px) scale(var(--gba-scale));
+    }
+    70% {
+      filter: hue-rotate(-18deg) saturate(1.65) brightness(1.18);
+      transform: translate(-0.3px, 0.5px) scale(var(--gba-scale));
+    }
+    100% {
+      filter: hue-rotate(0deg) saturate(1) brightness(1);
+      transform: scale(var(--gba-scale));
+    }
   }
 
   @media (max-width: 1060px), (max-height: 760px) {
