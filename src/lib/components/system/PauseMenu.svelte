@@ -1,8 +1,13 @@
 <script lang="ts">
   import { gameState } from '$lib/stores/gameState';
+  import { uiState } from '$lib/stores/uiState';
 
   const resume = () => {
     gameState.setPhase('playing');
+  };
+
+  const toggleLog = () => {
+    uiState.toggleLogPanel();
   };
 
   const closeOnBackdrop = (event: MouseEvent) => {
@@ -27,6 +32,9 @@
     </div>
     <button type="button" on:click={resume}>
       <span class="icon">▸</span> Resume
+    </button>
+    <button type="button" on:click={toggleLog}>
+      <span class="icon">◫</span> Toggle Log
     </button>
   </section>
 </div>

@@ -76,16 +76,25 @@ npm run preview
 ### Important rules
 
 - If suspicion reaches `100%`, you lose immediately.
-- `Write Judgment` is powerful but risky and requires Intel.
+- Notebook eliminations now require both `true name` and `face` intel per target.
+- You can choose a notebook death cause (`heart attack`, `accident`, `poisoning`, `suicide`) to influence risk.
+- Notebook writing now consumes `Willpower` and pages; recovery activities refill willpower.
 - Safe activities (study/social cover) help stabilize suspicion.
 - In `anime-canon`, missing a canon milestone window fractures timeline integrity and causes a canon-failure game over.
 
 ### UI quick guide
 
 - Top bar: mode, current day/block, and suspicion level
+- Top bar battery icon: current `Willpower`
 - Left column: scene, dialogue, and narrative choices
-- Right column: time controls, stats, suspicion meter, intel actions, canon tracker, activity log
+- Right column: time controls, stats, suspicion meter, investigation/write desk, canon tracker, activity log
+- World ticker: live timeline feed updates as days pass and targets are eliminated
 - Pause button: opens in-game pause menu
+
+### Keyboard shortcuts
+
+- `Enter`: START button emulation (title start/continue, in-game pause toggle)
+- `Shift`: SELECT button emulation (title help toggle, in-game log toggle)
 
 ## Save Data
 

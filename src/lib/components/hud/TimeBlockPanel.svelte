@@ -2,6 +2,11 @@
   import { gameState } from '$lib/stores/gameState';
   import { actionsRemaining, gameplayHint } from '$lib/stores/selectors';
 
+  $: restHint =
+    $gameState.stats.willpower < 25
+      ? 'Willpower critical. Prioritize recovery actions.'
+      : 'Willpower stable.';
+
   const advance = () => {
     gameState.advanceTime(1);
   };
@@ -13,6 +18,7 @@
     <span class="value">{$actionsRemaining} left</span>
   </div>
   <button type="button" on:click={advance}>Skip ▸</button>
+  <p class="meta">Will {$gameState.stats.willpower} | {restHint}</p>
   <p class="hint">{$gameplayHint}</p>
 </section>
 
@@ -73,5 +79,13 @@
     line-height: 1.3;
     font-family: var(--font-pixel, monospace);
     color: #8a7777;
+  }
+
+  .meta {
+    margin: 0;
+    font-size: 4px;
+    line-height: 1.25;
+    color: #6f9b78;
+    font-family: var(--font-pixel, monospace);
   }
 </style>

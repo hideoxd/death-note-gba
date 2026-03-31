@@ -15,6 +15,7 @@
     "inventory",
     "relationships",
     "flags",
+    "investigation",
     "narrative",
     "canon",
     "log",
@@ -40,12 +41,13 @@
     },
     "stats": {
       "type": "object",
-      "required": ["alibi", "intel", "morality", "stress"],
+      "required": ["alibi", "intel", "morality", "stress", "willpower"],
       "properties": {
         "alibi": { "type": "number" },
         "intel": { "type": "number" },
         "morality": { "type": "number", "minimum": -100, "maximum": 100 },
-        "stress": { "type": "number", "minimum": 0, "maximum": 100 }
+        "stress": { "type": "number", "minimum": 0, "maximum": 100 },
+        "willpower": { "type": "number", "minimum": 0, "maximum": 100 }
       },
       "additionalProperties": false
     },
@@ -106,6 +108,65 @@
       "additionalProperties": {
         "type": ["boolean", "number", "string"]
       }
+    },
+    "investigation": {
+      "type": "object",
+      "required": ["activeTargetIndex", "selectedCause", "targets", "eliminationLog"],
+      "properties": {
+        "activeTargetIndex": { "type": "integer", "minimum": 0 },
+        "selectedCause": {
+          "type": "string",
+          "enum": ["heart-attack", "accident", "poisoning", "suicide"]
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "id",
+              "alias",
+              "trueName",
+              "knownName",
+              "knownFace",
+              "faceSource",
+              "eliminated"
+            ],
+            "properties": {
+              "id": { "type": "string" },
+              "alias": { "type": "string" },
+              "trueName": { "type": "string" },
+              "knownName": { "type": "boolean" },
+              "knownFace": { "type": "boolean" },
+              "faceSource": {
+                "type": ["string", "null"],
+                "enum": ["news-clip", "social-feed", null]
+              },
+              "eliminated": { "type": "boolean" }
+            },
+            "additionalProperties": false
+          }
+        },
+        "eliminationLog": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["targetId", "alias", "trueName", "cause", "day", "block"],
+            "properties": {
+              "targetId": { "type": "string" },
+              "alias": { "type": "string" },
+              "trueName": { "type": "string" },
+              "cause": {
+                "type": "string",
+                "enum": ["heart-attack", "accident", "poisoning", "suicide"]
+              },
+              "day": { "type": "integer", "minimum": 1 },
+              "block": { "type": "string", "enum": ["morning", "afternoon", "night"] }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
     },
     "narrative": {
       "type": "object",

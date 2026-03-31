@@ -272,8 +272,23 @@ export const gameplayHint = derived(gameState, ($state) => {
     return 'Investigation is intense. Alternate Intel with safe activities.';
   }
 
+  const activeTarget = $state.investigation.targets[$state.investigation.activeTargetIndex];
+  if (activeTarget && !activeTarget.eliminated) {
+    if (!activeTarget.knownName) {
+      return `Investigation: trace the true name for ${activeTarget.alias} from police data.`;
+    }
+
+    if (!activeTarget.knownFace) {
+      return `Investigation: capture ${activeTarget.alias}'s face via news clip or social feed.`;
+    }
+  }
+
+  if ($state.stats.willpower < 20) {
+    return 'Willpower low: study or family cover to recharge notebook focus.';
+  }
+
   if ($state.stats.intel < 2) {
-    return 'Low Intel: scan feeds to enable judgment actions.';
+    return 'Low Intel: gather more data before writing a judgment.';
   }
 
   if ($state.stats.alibi < 6) {

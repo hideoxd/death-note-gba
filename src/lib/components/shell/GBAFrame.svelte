@@ -1,5 +1,20 @@
 <script lang="ts">
+  import { createEventDispatcher } from 'svelte';
+
   export let title = 'Death Note: Kira Protocol';
+
+  const dispatch = createEventDispatcher<{
+    start: void;
+    select: void;
+  }>();
+
+  const triggerStart = () => {
+    dispatch('start');
+  };
+
+  const triggerSelect = () => {
+    dispatch('select');
+  };
 </script>
 
 <div class="gba-shell" aria-label={title}>
@@ -31,8 +46,24 @@
         <div class="button a-btn"><span>A</span></div>
       </div>
       <div class="start-select">
-        <div class="ss-btn"><span>SELECT</span></div>
-        <div class="ss-btn"><span>START</span></div>
+        <button
+          type="button"
+          class="ss-btn"
+          aria-label="Select button (Shift)"
+          title="SELECT - Shift"
+          on:click={triggerSelect}
+        >
+          <span>SELECT</span>
+        </button>
+        <button
+          type="button"
+          class="ss-btn"
+          aria-label="Start button (Enter)"
+          title="START - Enter"
+          on:click={triggerStart}
+        >
+          <span>START</span>
+        </button>
       </div>
       <div class="speaker-holes">
         <i></i><i></i><i></i><i></i><i></i>
@@ -261,6 +292,21 @@
       inset 0 1px 3px rgba(0, 0, 0, 0.8),
       0 1px 2px rgba(255, 255, 255, 0.1);
     border: 1px solid rgba(50, 50, 65, 0.3);
+    cursor: pointer;
+    transition: transform 90ms ease-out, box-shadow 120ms ease-out;
+    appearance: none;
+    padding: 0;
+  }
+
+  .ss-btn:hover {
+    box-shadow:
+      inset 0 1px 3px rgba(0, 0, 0, 0.8),
+      0 1px 2px rgba(255, 255, 255, 0.15),
+      0 0 4px rgba(180, 180, 220, 0.08);
+  }
+
+  .ss-btn:active {
+    transform: translateY(1px);
   }
 
   .ss-btn span {
@@ -274,6 +320,7 @@
     transform: translateX(-50%);
     letter-spacing: 0.5px;
     user-select: none;
+    pointer-events: none;
   }
 
   .speaker-holes {

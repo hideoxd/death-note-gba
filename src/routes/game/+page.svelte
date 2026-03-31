@@ -2,12 +2,14 @@
   import { browser } from '$app/environment';
   import { goto } from '$app/navigation';
   import { onMount } from 'svelte';
+  import { fade } from 'svelte/transition';
 
   import GBAFrame from '$lib/components/shell/GBAFrame.svelte';
   import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
 
   import TopBar from '$lib/components/hud/TopBar.svelte';
   import CanonTimelineBar from '$lib/components/hud/CanonTimelineBar.svelte';
+  import WorldTicker from '$lib/components/hud/WorldTicker.svelte';
   import TimeBlockPanel from '$lib/components/hud/TimeBlockPanel.svelte';
   import StatPanel from '$lib/components/hud/StatPanel.svelte';
   import SuspicionMeter from '$lib/components/hud/SuspicionMeter.svelte';
@@ -22,6 +24,7 @@
   import LogPanel from '$lib/components/system/LogPanel.svelte';
 
   import { gameState } from '$lib/stores/gameState';
+  import { uiState } from '$lib/stores/uiState';
   import { isGameOver, phase } from '$lib/stores/selectors';
 
   let redirectingToTitle = false;
@@ -43,6 +46,14 @@
     }
   };
 
+  const triggerStart = () => {
+    togglePause();
+  };
+
+  const triggerSelect = () => {
+    uiState.toggleLogPanel();
+  };
+
   onMount(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.repeat || $gameState.phase === 'game-over') {
@@ -51,6 +62,18 @@
 
       if (event.key === 'Escape' || event.key.toLowerCase() === 'p') {
         togglePause();
+        return;
+      }
+
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        triggerStart();
+        return;
+      }
+
+      if (event.key === 'Shift') {
+        event.preventDefault();
+        triggerSelect();
       }
     };
 
@@ -62,11 +85,12 @@
 </script>
 
 <main class="game-page">
-  <GBAFrame title="Death Note Gameplay">
+  <GBAFrame title="Death Note Gameplay" on:start={triggerStart} on:select={triggerSelect}>
     <GBAScreen>
       <section class="game-screen">
         <TopBar />
         <CanonTimelineBar />
+        <WorldTicker />
 
         <div class="layout-grid">
           <section class="left-column">
@@ -80,7 +104,11 @@
             <SuspicionMeter />
             <IntelDesk />
             <CanonTracker />
-            <LogPanel />
+            {#if $uiState.showLogPanel}
+              <div in:fade={{ duration: 120 }} out:fade={{ duration: 90 }}>
+                <LogPanel />
+              </div>
+            {/if}
             <button type="button" class="pause-btn" on:click={togglePause}>
               ⏸ MENU
             </button>

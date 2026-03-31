@@ -230,6 +230,17 @@ export const applyEffects = (baseState: GameState, effects: Effect[]): GameState
         break;
       }
 
+      case 'willpower.add': {
+        state = {
+          ...state,
+          stats: {
+            ...state.stats,
+            willpower: clamp(state.stats.willpower + effect.value, 0, 100)
+          }
+        };
+        break;
+      }
+
       default:
         break;
     }

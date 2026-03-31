@@ -5,10 +5,11 @@ import { getCurrentNode, getDialogueTree, visitNode } from '$lib/engine/dialogue
 import { applyEffects } from '$lib/engine/effects';
 import { evaluateStoryProgression } from '$lib/engine/progression';
 import { createInitialGameState } from '$lib/engine/stateFactory';
-import { recalculateSuspicion } from '$lib/engine/suspicion';
+import { applySuspicionDelta, recalculateSuspicion } from '$lib/engine/suspicion';
 import { advanceClock } from '$lib/engine/time';
+import { clamp } from '$lib/utils/clamp';
 import type { GameAction } from '$lib/types/engine';
-import type { GameState, TimeBlock } from '$lib/types/game';
+import type { DeathCause, GameState, TimeBlock } from '$lib/types/game';
 
 const createLogId = (state: GameState): string => {
   return `${state.clock.totalBlocksElapsed}-${state.log.length + 1}`;
@@ -36,6 +37,116 @@ const pushLog = (
   };
 };
 
+const deathCauseLabels: Record<DeathCause, string> = {
+  'heart-attack': 'Heart Attack',
+  accident: 'Accident',
+  poisoning: 'Poisoning',
+  suicide: 'Forced Suicide'
+};
+
+const deathCauseIntelCost: Record<DeathCause, number> = {
+  'heart-attack': 2,
+  accident: 3,
+  poisoning: 3,
+  suicide: 4
+};
+
+const deathCauseWillpowerCost: Record<DeathCause, number> = {
+  'heart-attack': 14,
+  accident: 18,
+  poisoning: 20,
+  suicide: 22
+};
+
+const deathCauseMoralityCost: Record<DeathCause, number> = {
+  'heart-attack': 3,
+  accident: 4,
+  poisoning: 5,
+  suicide: 6
+};
+
+const deathCauseStressGain: Record<DeathCause, number> = {
+  'heart-attack': 1,
+  accident: 2,
+  poisoning: 3,
+  suicide: 4
+};
+
+const deathCauseSuspicionDelta: Record<DeathCause, number> = {
+  'heart-attack': 4,
+  accident: 5,
+  poisoning: 6,
+  suicide: 7
+};
+
+const targetAliasPool = [
+  'Insider Trading Broker',
+  'Counterfeit Passport Runner',
+  'Kidnapping Coordinator',
+  'Arms Auction Facilitator',
+  'Serial Fraud Architect',
+  'Violent Loan Shark',
+  'Blackmail Syndicate Fixer',
+  'Organized Arson Contact'
+];
+
+const targetNamePool = [
+  'Koji Imanishi',
+  'Ren Takigawa',
+  'Atsushi Kudo',
+  'Yuto Nishimori',
+  'Takumi Hasebe',
+  'Shunpei Odawara',
+  'Naoki Ishizuka',
+  'Keita Minagawa'
+];
+
+const buildTargetWave = (wave: number): GameState['investigation']['targets'] => {
+  const count = 4;
+
+  return Array.from({ length: count }, (_, index) => {
+    const alias = targetAliasPool[(wave + index - 1) % targetAliasPool.length];
+    const trueName = targetNamePool[(wave * 2 + index - 1) % targetNamePool.length];
+
+    return {
+      id: `wave-${wave}-target-${index + 1}`,
+      alias,
+      trueName,
+      knownName: false,
+      knownFace: false,
+      faceSource: null,
+      eliminated: false
+    };
+  });
+};
+
+const refreshInvestigationWave = (state: GameState): GameState => {
+  if (state.investigation.targets.length === 0) {
+    return state;
+  }
+
+  if (state.investigation.targets.some((target) => !target.eliminated)) {
+    return state;
+  }
+
+  const currentWaveFlag = state.flags.investigation_wave;
+  const currentWave = typeof currentWaveFlag === 'number' ? Math.max(1, Math.floor(currentWaveFlag)) : 1;
+  const nextWave = currentWave + 1;
+
+  return {
+    ...state,
+    flags: {
+      ...state.flags,
+      investigation_wave: nextWave
+    },
+    investigation: {
+      ...state.investigation,
+      activeTargetIndex: 0,
+      targets: buildTargetWave(nextWave)
+    }
+  };
+};
+
 const advanceTimeStep = (state: GameState, blocks = 1): GameState => {
   const nextClock = advanceClock(state.clock, blocks);
 
@@ -50,7 +161,34 @@ const advanceTimeStep = (state: GameState, blocks = 1): GameState => {
 
   next = recalculateSuspicion(next);
   next = evaluateCanonTimeline(next);
+  next = refreshInvestigationWave(next);
 
+  return next;
+};
+
+const spendAction = (state: GameState): GameState => {
+  return {
+    ...state,
+    actionEconomy: {
+      ...state.actionEconomy,
+      actionsRemaining: state.actionEconomy.actionsRemaining - 1
+    }
+  };
+};
+
+const finalizeActionStep = (state: GameState): GameState => {
+  if (state.phase === 'game-over' || state.actionEconomy.actionsRemaining > 0) {
+    return state;
+  }
+
+  let next = advanceTimeStep(state, 1);
+
+  if (next.flags.investigation_wave !== state.flags.investigation_wave) {
+    next = pushLog(next, 'system', `New criminal dossier uploaded. Investigation wave ${next.flags.investigation_wave}.`);
+  }
+
+  next = applyProgression(next);
+  next = pushLog(next, 'system', 'Time block ended. Moving to next block.');
   return next;
 };
 
@@ -122,6 +260,11 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
     case 'ADVANCE_TIME': {
       const blocks = action.blocks ?? 1;
       let next = advanceTimeStep(state, blocks);
+
+      if (next.flags.investigation_wave !== state.flags.investigation_wave) {
+        next = pushLog(next, 'system', `New criminal dossier uploaded. Investigation wave ${next.flags.investigation_wave}.`);
+      }
+
       next = applyProgression(next);
       next = pushLog(next, 'system', `Time advanced by ${blocks} block(s).`);
       return next;
@@ -161,26 +304,250 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         return pushLog(state, 'system', `Cannot do ${activity.label}: ${message}.`);
       }
 
-      let next: GameState = {
-        ...state,
-        actionEconomy: {
-          ...state.actionEconomy,
-          actionsRemaining: state.actionEconomy.actionsRemaining - 1
-        }
-      };
+      let next: GameState = spendAction(state);
 
       next = applyEffects(next, activity.effects);
       next = evaluateCanonTimeline(next);
       next = applyProgression(next);
       next = pushLog(next, 'action', `Activity: ${activity.label}`);
+      return finalizeActionStep(next);
+    }
 
-      if (next.phase !== 'game-over' && next.actionEconomy.actionsRemaining <= 0) {
-        next = advanceTimeStep(next, 1);
-        next = applyProgression(next);
-        next = pushLog(next, 'system', 'Time block ended. Moving to next block.');
+    case 'SELECT_INVESTIGATION_TARGET': {
+      const maxIndex = state.investigation.targets.length - 1;
+      if (maxIndex < 0) {
+        return state;
       }
 
-      return next;
+      const nextIndex = clamp(action.index, 0, maxIndex);
+      if (nextIndex === state.investigation.activeTargetIndex) {
+        return state;
+      }
+
+      const target = state.investigation.targets[nextIndex];
+      const next = {
+        ...state,
+        investigation: {
+          ...state.investigation,
+          activeTargetIndex: nextIndex
+        }
+      };
+
+      return pushLog(next, 'system', `Target focus shifted: ${target.alias}.`);
+    }
+
+    case 'SET_JUDGMENT_CAUSE': {
+      if (state.investigation.selectedCause === action.cause) {
+        return state;
+      }
+
+      const next = {
+        ...state,
+        investigation: {
+          ...state.investigation,
+          selectedCause: action.cause
+        }
+      };
+
+      return pushLog(next, 'system', `Notebook cause set to ${deathCauseLabels[action.cause]}.`);
+    }
+
+    case 'INVESTIGATE_TARGET_NAME': {
+      if (state.phase !== 'playing') {
+        return state;
+      }
+
+      if (state.actionEconomy.actionsRemaining <= 0) {
+        return pushLog(state, 'system', 'No actions left in this time block. Skip block to continue.');
+      }
+
+      const targetIndex = state.investigation.activeTargetIndex;
+      const target = state.investigation.targets[targetIndex];
+
+      if (!target) {
+        return pushLog(state, 'system', 'No investigation target selected.');
+      }
+
+      if (target.eliminated) {
+        return pushLog(state, 'system', `${target.alias} is already neutralized.`);
+      }
+
+      if (target.knownName) {
+        return pushLog(state, 'system', `True name already confirmed for ${target.alias}.`);
+      }
+
+      let next: GameState = spendAction(state);
+      const nextTargets = [...next.investigation.targets];
+      nextTargets[targetIndex] = {
+        ...target,
+        knownName: true
+      };
+
+      next = {
+        ...next,
+        stats: {
+          ...next.stats,
+          intel: Math.max(0, next.stats.intel + 1),
+          stress: clamp(next.stats.stress + 2, 0, 100)
+        },
+        investigation: {
+          ...next.investigation,
+          targets: nextTargets
+        }
+      };
+
+      next = applySuspicionDelta(next, 3, 'police_database_probe');
+      next = pushLog(next, 'action', `Database trace complete: name acquired for ${target.alias}.`);
+      return finalizeActionStep(next);
+    }
+
+    case 'INVESTIGATE_TARGET_FACE': {
+      if (state.phase !== 'playing') {
+        return state;
+      }
+
+      if (state.actionEconomy.actionsRemaining <= 0) {
+        return pushLog(state, 'system', 'No actions left in this time block. Skip block to continue.');
+      }
+
+      const targetIndex = state.investigation.activeTargetIndex;
+      const target = state.investigation.targets[targetIndex];
+
+      if (!target) {
+        return pushLog(state, 'system', 'No investigation target selected.');
+      }
+
+      if (target.eliminated) {
+        return pushLog(state, 'system', `${target.alias} is already neutralized.`);
+      }
+
+      const sourceLabel = action.source === 'news-clip' ? 'news clip' : 'social feed';
+
+      if (target.knownFace && target.faceSource === action.source) {
+        return pushLog(state, 'system', `Face evidence from ${sourceLabel} already archived.`);
+      }
+
+      let next: GameState = spendAction(state);
+      const nextTargets = [...next.investigation.targets];
+      nextTargets[targetIndex] = {
+        ...target,
+        knownFace: true,
+        faceSource: action.source
+      };
+
+      next = {
+        ...next,
+        stats: {
+          ...next.stats,
+          intel: Math.max(0, next.stats.intel + 1),
+          stress: clamp(next.stats.stress + 1, 0, 100)
+        },
+        investigation: {
+          ...next.investigation,
+          targets: nextTargets
+        }
+      };
+
+      next = applySuspicionDelta(next, action.source === 'news-clip' ? 1 : 2, 'face_intel_probe');
+      next = pushLog(next, 'action', `Face intel captured from ${sourceLabel} for ${target.alias}.`);
+      return finalizeActionStep(next);
+    }
+
+    case 'WRITE_JUDGMENT': {
+      if (state.phase !== 'playing') {
+        return state;
+      }
+
+      if (state.actionEconomy.actionsRemaining <= 0) {
+        return pushLog(state, 'system', 'No actions left in this time block. Skip block to continue.');
+      }
+
+      if (state.inventory.notebookPages <= 0) {
+        return pushLog(state, 'system', 'Notebook is out of pages.');
+      }
+
+      const targetIndex = state.investigation.activeTargetIndex;
+      const target = state.investigation.targets[targetIndex];
+      const cause = state.investigation.selectedCause;
+
+      if (!target) {
+        return pushLog(state, 'system', 'No investigation target selected.');
+      }
+
+      if (target.eliminated) {
+        return pushLog(state, 'system', `${target.alias} is already neutralized.`);
+      }
+
+      if (!target.knownName || !target.knownFace) {
+        const missing = [
+          !target.knownName ? 'true name' : null,
+          !target.knownFace ? 'face confirmation' : null
+        ]
+          .filter((value): value is string => Boolean(value))
+          .join(' + ');
+
+        return pushLog(state, 'system', `Judgment blocked: gather ${missing} first.`);
+      }
+
+      const intelCost = deathCauseIntelCost[cause];
+      const willpowerCost = deathCauseWillpowerCost[cause];
+
+      if (state.stats.intel < intelCost) {
+        return pushLog(state, 'system', `Judgment blocked: need Intel ${intelCost}.`);
+      }
+
+      if (state.stats.willpower < willpowerCost) {
+        return pushLog(state, 'system', `Judgment blocked: need Willpower ${willpowerCost}.`);
+      }
+
+      const nextTargets = [...state.investigation.targets];
+      nextTargets[targetIndex] = {
+        ...target,
+        eliminated: true
+      };
+
+      const fallbackTargetIndex = nextTargets.findIndex((entry) => !entry.eliminated);
+
+      let next: GameState = spendAction(state);
+      next = {
+        ...next,
+        stats: {
+          ...next.stats,
+          intel: Math.max(0, next.stats.intel - intelCost),
+          morality: clamp(next.stats.morality - deathCauseMoralityCost[cause], -100, 100),
+          stress: clamp(next.stats.stress + deathCauseStressGain[cause], 0, 100),
+          willpower: clamp(next.stats.willpower - willpowerCost, 0, 100)
+        },
+        inventory: {
+          ...next.inventory,
+          notebookPages: Math.max(0, next.inventory.notebookPages - 1)
+        },
+        investigation: {
+          ...next.investigation,
+          activeTargetIndex: fallbackTargetIndex === -1 ? targetIndex : fallbackTargetIndex,
+          targets: nextTargets,
+          eliminationLog: [
+            ...next.investigation.eliminationLog,
+            {
+              targetId: target.id,
+              alias: target.alias,
+              trueName: target.trueName,
+              cause,
+              day: state.clock.day,
+              block: state.clock.block
+            }
+          ]
+        }
+      };
+
+      next = applySuspicionDelta(next, deathCauseSuspicionDelta[cause], `execution_pattern_${cause}`);
+      next = pushLog(next, 'action', `Judgment written: ${target.trueName} (${deathCauseLabels[cause]}).`);
+
+      if (next.investigation.targets.every((entry) => entry.eliminated)) {
+        next = pushLog(next, 'system', 'Current target slate exhausted. Advance time to wait for new leads.');
+      }
+
+      return finalizeActionStep(next);
     }
 
     case 'SELECT_CHOICE': {

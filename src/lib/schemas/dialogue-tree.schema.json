@@ -197,7 +197,8 @@
             "time.advance",
             "milestone.complete",
             "node.jump",
-            "gameover.trigger"
+            "gameover.trigger",
+            "willpower.add"
           ]
         }
       },
@@ -296,6 +297,15 @@
                 "enum": ["suspicion-max", "canon-failure", "captured", "ending"]
               },
               "detail": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "type": { "const": "willpower.add" } } },
+          "then": {
+            "required": ["value"],
+            "properties": {
+              "value": { "type": "number" }
             }
           }
         }

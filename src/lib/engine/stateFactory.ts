@@ -2,6 +2,45 @@ import { CANON_MILESTONES, DEFAULT_TREE_BY_MODE, DIALOGUE_TREES } from '$lib/dat
 import { createInitialSuspicionBreakdown } from '$lib/engine/suspicion';
 import type { GameMode, GameState, Phase } from '$lib/types/game';
 
+const investigationTargetSeed: GameState['investigation']['targets'] = [
+  {
+    id: 'target-01',
+    alias: 'Bus Hijacker Suspect',
+    trueName: 'Daiki Hamura',
+    knownName: false,
+    knownFace: false,
+    faceSource: null,
+    eliminated: false
+  },
+  {
+    id: 'target-02',
+    alias: 'Corporate Bribe Broker',
+    trueName: 'Kenta Moroboshi',
+    knownName: false,
+    knownFace: false,
+    faceSource: null,
+    eliminated: false
+  },
+  {
+    id: 'target-03',
+    alias: 'Serial Extortion Caller',
+    trueName: 'Riku Kasahara',
+    knownName: false,
+    knownFace: false,
+    faceSource: null,
+    eliminated: false
+  },
+  {
+    id: 'target-04',
+    alias: 'Arson Ring Planner',
+    trueName: 'Shota Mikuni',
+    knownName: false,
+    knownFace: false,
+    faceSource: null,
+    eliminated: false
+  }
+];
+
 const relationshipSeed = {
   l: { trust: -10, suspicion: 12, affinity: -20 },
   ryuk: { trust: 0, suspicion: 0, affinity: 15 },
@@ -32,6 +71,7 @@ const defaultFlags = {
   mello_interference: false,
   yellow_box_triggered: false,
   light_dead: false,
+  investigation_wave: 1,
   divergent_ch2_started: false,
   divergent_ch2_complete: false,
   false_channels: false,
@@ -44,6 +84,9 @@ const cloneRelationshipSeed = (): GameState['relationships'] => ({
   ryuk: { ...relationshipSeed.ryuk },
   sayu: { ...relationshipSeed.sayu }
 });
+
+const cloneInvestigationTargets = (): GameState['investigation']['targets'] =>
+  investigationTargetSeed.map((target) => ({ ...target }));
 
 const buildMilestoneState = (): GameState['canon']['milestoneState'] => {
   const entries = CANON_MILESTONES.map((milestone) => [milestone.id, 'locked'] as const);
@@ -72,7 +115,7 @@ export const createInitialGameState = (
   }
 
   return {
-    version: 1,
+    version: 2,
     seed: createSeed(),
     mode,
     phase,
@@ -88,7 +131,8 @@ export const createInitialGameState = (
       alibi: 0,
       intel: 0,
       morality: 0,
-      stress: 0
+      stress: 0,
+      willpower: 72
     },
     suspicion: {
       meter: 0,
@@ -106,6 +150,12 @@ export const createInitialGameState = (
     },
     relationships: cloneRelationshipSeed(),
     flags: { ...defaultFlags },
+    investigation: {
+      activeTargetIndex: 0,
+      selectedCause: 'heart-attack',
+      targets: cloneInvestigationTargets(),
+      eliminationLog: []
+    },
     narrative: {
       activeTreeId,
       currentNodeId: tree.meta.startNodeId,

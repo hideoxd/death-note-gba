@@ -1,6 +1,8 @@
 export type GameMode = 'anime-canon' | 'divergent';
 export type TimeBlock = 'morning' | 'afternoon' | 'night';
 export type Phase = 'title' | 'playing' | 'paused' | 'ending' | 'game-over';
+export type DeathCause = 'heart-attack' | 'accident' | 'poisoning' | 'suicide';
+export type FaceIntelSource = 'news-clip' | 'social-feed' | null;
 
 export interface GameClock {
   day: number;
@@ -16,6 +18,33 @@ export interface PlayerStats {
   intel: number;
   morality: number;
   stress: number;
+  willpower: number;
+}
+
+export interface InvestigationTarget {
+  id: string;
+  alias: string;
+  trueName: string;
+  knownName: boolean;
+  knownFace: boolean;
+  faceSource: FaceIntelSource;
+  eliminated: boolean;
+}
+
+export interface EliminationRecord {
+  targetId: string;
+  alias: string;
+  trueName: string;
+  cause: DeathCause;
+  day: number;
+  block: TimeBlock;
+}
+
+export interface InvestigationState {
+  activeTargetIndex: number;
+  selectedCause: DeathCause;
+  targets: InvestigationTarget[];
+  eliminationLog: EliminationRecord[];
 }
 
 export interface SuspicionBreakdown {
@@ -97,6 +126,7 @@ export interface GameState {
   };
   relationships: Record<string, RelationshipState>;
   flags: Record<string, boolean | number | string>;
+  investigation: InvestigationState;
   narrative: NarrativeState;
   canon: CanonState;
   log: LogEntry[];

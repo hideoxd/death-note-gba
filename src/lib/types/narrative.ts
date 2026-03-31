@@ -80,6 +80,10 @@ export type Effect =
       type: 'gameover.trigger';
       reason: 'suspicion-max' | 'canon-failure' | 'captured' | 'ending';
       detail?: string;
+    }
+  | {
+      type: 'willpower.add';
+      value: number;
     };
 
 export type DialogueNodeType = 'scene' | 'choice' | 'event' | 'system';

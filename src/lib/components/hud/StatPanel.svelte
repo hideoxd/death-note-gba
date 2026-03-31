@@ -31,6 +31,11 @@
       <span class="bar"><span class="f stress" style="width:{Math.min($gameState.stats.stress, 100)}%"></span></span>
       <span class="v {scoreClass(-$gameState.stats.stress, -20, -70)}">{$gameState.stats.stress}</span>
     </li>
+    <li>
+      <span class="n">WIL</span>
+      <span class="bar"><span class="f will" style="width:{Math.min($gameState.stats.willpower, 100)}%"></span></span>
+      <span class="v {scoreClass($gameState.stats.willpower, 65, 25)}">{$gameState.stats.willpower}</span>
+    </li>
   </ul>
 </section>
 
@@ -95,6 +100,7 @@
   .intel { background: linear-gradient(90deg, #2a4a6a, #4a8db5); }
   .moral { background: linear-gradient(90deg, #5a5a2a, #c4a44a); }
   .stress { background: linear-gradient(90deg, #6a2a2a, #cc4040); }
+  .will { background: linear-gradient(90deg, #2a5f3a, #6fc786); }
 
   .v {
     font-size: 5px;

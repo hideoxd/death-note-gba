@@ -16,8 +16,36 @@
       showMenu = true;
     }, 800);
 
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.repeat) return;
+
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        if (showRules) {
+          showRules = false;
+          return;
+        }
+
+        if (canContinue) {
+          void continueGame();
+          return;
+        }
+
+        void start('anime-canon');
+        return;
+      }
+
+      if (event.key === 'Shift') {
+        event.preventDefault();
+        showRules = !showRules;
+      }
+    };
+
+    window.addEventListener('keydown', onKeyDown);
+
     return () => {
       window.clearTimeout(timer);
+      window.removeEventListener('keydown', onKeyDown);
     };
   });
 
@@ -39,10 +67,28 @@
     gameState.clearSave();
     canContinue = false;
   };
+
+  const triggerStart = () => {
+    if (showRules) {
+      showRules = false;
+      return;
+    }
+
+    if (canContinue) {
+      void continueGame();
+      return;
+    }
+
+    void start('anime-canon');
+  };
+
+  const triggerSelect = () => {
+    showRules = !showRules;
+  };
 </script>
 
 <main class="title-page">
-  <GBAFrame title="Death Note: Kira Protocol">
+  <GBAFrame title="Death Note: Kira Protocol" on:start={triggerStart} on:select={triggerSelect}>
     <GBAScreen>
       <section class="title-screen">
         <!-- Decorative background elements -->

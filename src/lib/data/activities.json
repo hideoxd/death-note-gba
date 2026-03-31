@@ -7,6 +7,7 @@
     "effects": [
       { "type": "stat.add", "path": "stats.alibi", "value": 3 },
       { "type": "stat.add", "path": "stats.stress", "value": -1 },
+      { "type": "willpower.add", "value": 8 },
       { "type": "suspicion.add", "value": -3, "reason": "consistent_study_pattern" }
     ],
     "tags": ["alibi", "routine"]
@@ -32,24 +33,22 @@
       { "type": "stat.add", "path": "stats.alibi", "value": 2 },
       { "type": "relationship.add", "characterId": "sayu", "metric": "trust", "value": 4 },
       { "type": "stat.add", "path": "stats.stress", "value": -2 },
+      { "type": "willpower.add", "value": 10 },
       { "type": "suspicion.add", "value": -2, "reason": "family_cover" }
     ],
     "tags": ["alibi", "relationship"]
   },
   {
-    "id": "judgment-write",
-    "label": "Write Judgment",
-    "description": "Execute notebook justice at significant investigative risk.",
-    "tutorialHint": "Spend Intel for impact; avoid chaining this repeatedly.",
-    "requirements": [
-      { "type": "compare", "path": "stats.intel", "op": ">=", "value": 2 }
-    ],
+    "id": "mind-palace-break",
+    "label": "Mind Palace Break",
+    "description": "Reset your composure to recover focus before the next notebook entry.",
+    "tutorialHint": "Excellent for rebuilding Willpower after multiple executions.",
     "effects": [
-      { "type": "stat.add", "path": "stats.intel", "value": -2 },
-      { "type": "stat.add", "path": "stats.morality", "value": -3 },
-      { "type": "stat.add", "path": "stats.stress", "value": 1 },
-      { "type": "suspicion.add", "value": 4, "reason": "execution_pattern" }
+      { "type": "stat.add", "path": "stats.alibi", "value": 1 },
+      { "type": "stat.add", "path": "stats.stress", "value": -4 },
+      { "type": "willpower.add", "value": 14 },
+      { "type": "suspicion.add", "value": -1, "reason": "routine_reset" }
     ],
-    "tags": ["kira", "high-risk"]
+    "tags": ["recovery", "routine"]
   }
 ]
