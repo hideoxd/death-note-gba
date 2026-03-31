@@ -7,13 +7,23 @@
   export let pressedSelect = false;
   export let pressedA = false;
   export let pressedB = false;
+  export let pressedUp = false;
+  export let pressedDown = false;
+  export let pressedLeft = false;
+  export let pressedRight = false;
 
   const dispatch = createEventDispatcher<{
     start: void;
     select: void;
     a: void;
     b: void;
+    up: void;
+    down: void;
+    left: void;
+    right: void;
   }>();
+
+  type DpadDirection = 'up' | 'down' | 'left' | 'right';
 
   const triggerStart = () => {
     playTextBlip();
@@ -41,40 +51,50 @@
     dispatch('b');
   };
 
-  let tiltX = 0;
-  let tiltY = 0;
-
-  const handleTilt = (event: MouseEvent) => {
-    const target = event.currentTarget as HTMLElement;
-    const rect = target.getBoundingClientRect();
-    const cx = rect.left + rect.width / 2;
-    const cy = rect.top + rect.height / 2;
-    const dx = (event.clientX - cx) / (rect.width / 2);
-    const dy = (event.clientY - cy) / (rect.height / 2);
-    tiltY = Math.max(-4, Math.min(4, dx * 3.6));
-    tiltX = Math.max(-3, Math.min(3, -dy * 2.8));
+  const triggerDpad = (direction: DpadDirection) => {
+    clickPlastic();
+    dispatch(direction);
   };
 
-  const resetTilt = () => {
-    tiltX = 0;
-    tiltY = 0;
-  };
 </script>
 
 <div
   class="gba-shell"
   role="img"
   aria-label={title}
-  on:mousemove={handleTilt}
-  on:mouseleave={resetTilt}
-  style="transform: perspective(1200px) rotateX({tiltX}deg) rotateY({tiltY}deg);"
 >
   <div class="shell-body">
     <!-- Left controls -->
     <div class="dpad-area">
       <div class="dpad" role="group" aria-label="D-Pad">
-        <button type="button" class="dpad-v" aria-label="D-Pad vertical" on:click={clickPlastic}></button>
-        <button type="button" class="dpad-h" aria-label="D-Pad horizontal" on:click={clickPlastic}></button>
+        <button
+          type="button"
+          class="dpad-btn dpad-up"
+          class:pressed={pressedUp}
+          aria-label="D-Pad up"
+          on:click={() => triggerDpad('up')}
+        ></button>
+        <button
+          type="button"
+          class="dpad-btn dpad-down"
+          class:pressed={pressedDown}
+          aria-label="D-Pad down"
+          on:click={() => triggerDpad('down')}
+        ></button>
+        <button
+          type="button"
+          class="dpad-btn dpad-left"
+          class:pressed={pressedLeft}
+          aria-label="D-Pad left"
+          on:click={() => triggerDpad('left')}
+        ></button>
+        <button
+          type="button"
+          class="dpad-btn dpad-right"
+          class:pressed={pressedRight}
+          aria-label="D-Pad right"
+          on:click={() => triggerDpad('right')}
+        ></button>
         <div class="dpad-center"></div>
       </div>
     </div>
@@ -150,8 +170,16 @@
     display: flex;
     justify-content: center;
     align-items: center;
-    transition: transform 120ms ease-out;
-    will-change: transform;
+    transition: filter 120ms ease-out;
+  }
+
+  .gba-shell:hover .shell-body {
+    box-shadow:
+      0 0 68px rgba(200, 0, 0, 0.08),
+      0 22px 44px rgba(0, 0, 0, 0.72),
+      0 10px 18px rgba(0, 0, 0, 0.52),
+      inset 0 2px 4px rgba(255, 255, 255, 0.08),
+      inset 0 -6px 12px rgba(0, 0, 0, 0.6);
   }
 
   .shell-body {
@@ -267,36 +295,64 @@
     height: 66px;
   }
 
-  .dpad-v, .dpad-h {
+  .dpad-btn {
     background: linear-gradient(180deg, #2e303a 0%, #22242c 100%);
     position: absolute;
+    z-index: 1;
     box-shadow:
       inset 0 2px 4px rgba(255, 255, 255, 0.08),
       inset 0 -2px 6px rgba(0, 0, 0, 0.7),
       0 2px 4px rgba(0, 0, 0, 0.4);
-    border-radius: 3px;
     border: 1px solid rgba(50, 50, 65, 0.4);
     cursor: pointer;
     padding: 0;
+    transition: transform 80ms ease-out, box-shadow 120ms ease-out, background 120ms ease-out;
   }
 
-  .dpad-v:active,
-  .dpad-h:active {
-    transform: scale(0.95);
+  .dpad-btn:hover {
+    background: linear-gradient(180deg, #323441 0%, #252833 100%);
   }
 
-  .dpad-v {
+  .dpad-btn:active,
+  .dpad-btn.pressed {
+    transform: translateY(1px) scale(0.96);
+    box-shadow:
+      inset 0 1px 3px rgba(255, 255, 255, 0.04),
+      inset 0 -2px 5px rgba(0, 0, 0, 0.78),
+      0 1px 2px rgba(0, 0, 0, 0.5);
+    background: linear-gradient(180deg, #272a34 0%, #1c1f27 100%);
+  }
+
+  .dpad-up {
     width: 22px;
-    height: 66px;
+    height: 30px;
     left: 22px;
     top: 0;
+    border-radius: 4px 4px 2px 2px;
   }
 
-  .dpad-h {
-    width: 66px;
+  .dpad-down {
+    width: 22px;
+    height: 30px;
+    left: 22px;
+    top: 36px;
+    border-radius: 2px 2px 4px 4px;
+  }
+
+  .dpad-left {
+    width: 30px;
     height: 22px;
     left: 0;
     top: 22px;
+    border-radius: 4px 2px 2px 4px;
+  }
+
+  .dpad-right {
+    width: 30px;
+    height: 22px;
+    left: 36px;
+    top: 22px;
+    border-radius: 2px 4px 4px 2px;
   }
 
   .dpad-center {
@@ -308,6 +364,8 @@
     left: 27px;
     top: 27px;
     box-shadow: inset 0 1px 3px rgba(0,0,0,0.8);
+    z-index: 2;
+    pointer-events: none;
   }
 
   /* Action buttons */

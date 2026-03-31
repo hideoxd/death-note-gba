@@ -13,16 +13,52 @@
   let pressedSelect = false;
   let pressedA = false;
   let pressedB = false;
+  let pressedUp = false;
+  let pressedDown = false;
+  let pressedLeft = false;
+  let pressedRight = false;
+  let selectedMenuIndex = 0;
+  let transitionLocked = false;
 
   const clearPressed = () => {
     pressedStart = false;
     pressedSelect = false;
     pressedA = false;
     pressedB = false;
+    pressedUp = false;
+    pressedDown = false;
+    pressedLeft = false;
+    pressedRight = false;
+  };
+
+  $: menuOrder = canContinue
+    ? ['continue', 'clear', 'anime-canon', 'divergent', 'help']
+    : ['anime-canon', 'divergent', 'help'];
+
+  $: if (selectedMenuIndex >= menuOrder.length) {
+    selectedMenuIndex = Math.max(0, menuOrder.length - 1);
+  }
+
+  const isSelected = (id: string) => menuOrder[selectedMenuIndex] === id;
+
+  const setSelectedById = (id: string) => {
+    const index = menuOrder.indexOf(id);
+    if (index !== -1) {
+      selectedMenuIndex = index;
+    }
+  };
+
+  const moveMenuSelection = (delta: number) => {
+    if (!showMenu || showRules || menuOrder.length === 0) {
+      return;
+    }
+
+    selectedMenuIndex = (selectedMenuIndex + delta + menuOrder.length) % menuOrder.length;
   };
 
   onMount(() => {
     canContinue = hasSnapshot();
+    selectedMenuIndex = canContinue ? 0 : 0;
     const timer = window.setTimeout(() => {
       showMenu = true;
     }, 800);
@@ -38,39 +74,51 @@
         pressedA = true;
       } else if (key === 'x') {
         pressedB = true;
+      } else if (key === 'arrowup') {
+        pressedUp = true;
+      } else if (key === 'arrowdown') {
+        pressedDown = true;
+      } else if (key === 'arrowleft') {
+        pressedLeft = true;
+      } else if (key === 'arrowright') {
+        pressedRight = true;
       }
 
       if (event.repeat) return;
 
+      if (key === 'arrowup') {
+        event.preventDefault();
+        moveMenuSelection(-1);
+        return;
+      }
+
+      if (key === 'arrowdown') {
+        event.preventDefault();
+        moveMenuSelection(1);
+        return;
+      }
+
+      if (key === 'arrowleft') {
+        event.preventDefault();
+        moveMenuSelection(-1);
+        return;
+      }
+
+      if (key === 'arrowright') {
+        event.preventDefault();
+        moveMenuSelection(1);
+        return;
+      }
+
       if (event.key === 'Enter') {
         event.preventDefault();
-        if (showRules) {
-          showRules = false;
-          return;
-        }
-
-        if (canContinue) {
-          void continueGame();
-          return;
-        }
-
-        void start('anime-canon');
+        void activateSelectedMenu();
         return;
       }
 
       if (key === 'z') {
         event.preventDefault();
-        if (showRules) {
-          showRules = false;
-          return;
-        }
-
-        if (canContinue) {
-          void continueGame();
-          return;
-        }
-
-        void start('anime-canon');
+        void activateSelectedMenu();
         return;
       }
 
@@ -91,6 +139,14 @@
         pressedA = false;
       } else if (key === 'x') {
         pressedB = false;
+      } else if (key === 'arrowup') {
+        pressedUp = false;
+      } else if (key === 'arrowdown') {
+        pressedDown = false;
+      } else if (key === 'arrowleft') {
+        pressedLeft = false;
+      } else if (key === 'arrowright') {
+        pressedRight = false;
       }
     };
 
@@ -108,17 +164,37 @@
   });
 
   const start = async (mode: 'anime-canon' | 'divergent') => {
+    if (transitionLocked) {
+      return;
+    }
+
+    transitionLocked = true;
     gameState.startNewGame(mode);
-    await goto('/game');
+    try {
+      await goto('/game');
+    } finally {
+      transitionLocked = false;
+    }
   };
 
   const continueGame = async () => {
+    if (transitionLocked) {
+      return;
+    }
+
+    transitionLocked = true;
     const loaded = gameState.continueFromSave();
     if (!loaded) {
       canContinue = false;
+      transitionLocked = false;
       return;
     }
-    await goto('/game');
+
+    try {
+      await goto('/game');
+    } finally {
+      transitionLocked = false;
+    }
   };
 
   const clearSave = () => {
@@ -127,21 +203,69 @@
   };
 
   const triggerStart = () => {
+    void activateSelectedMenu();
+  };
+
+  const triggerSelect = () => {
+    showRules = !showRules;
+  };
+
+  const triggerA = () => {
+    void activateSelectedMenu();
+  };
+
+  const triggerB = () => {
+    showRules = !showRules;
+  };
+
+  const triggerUp = () => {
+    moveMenuSelection(-1);
+  };
+
+  const triggerDown = () => {
+    moveMenuSelection(1);
+  };
+
+  const triggerLeft = () => {
+    moveMenuSelection(-1);
+  };
+
+  const triggerRight = () => {
+    moveMenuSelection(1);
+  };
+
+  const activateSelectedMenu = async () => {
     if (showRules) {
       showRules = false;
       return;
     }
 
-    if (canContinue) {
-      void continueGame();
+    const selected = menuOrder[selectedMenuIndex];
+    if (!selected) {
       return;
     }
 
-    void start('anime-canon');
-  };
+    if (selected === 'continue') {
+      await continueGame();
+      return;
+    }
 
-  const triggerSelect = () => {
-    showRules = !showRules;
+    if (selected === 'clear') {
+      clearSave();
+      return;
+    }
+
+    if (selected === 'anime-canon') {
+      await start('anime-canon');
+      return;
+    }
+
+    if (selected === 'divergent') {
+      await start('divergent');
+      return;
+    }
+
+    showRules = true;
   };
 </script>
 
@@ -152,8 +276,18 @@
     pressedSelect={pressedSelect}
     pressedA={pressedA}
     pressedB={pressedB}
+    pressedUp={pressedUp}
+    pressedDown={pressedDown}
+    pressedLeft={pressedLeft}
+    pressedRight={pressedRight}
     on:start={triggerStart}
     on:select={triggerSelect}
+    on:a={triggerA}
+    on:b={triggerB}
+    on:up={triggerUp}
+    on:down={triggerDown}
+    on:left={triggerLeft}
+    on:right={triggerRight}
   >
     <GBAScreen>
       <section class="title-screen">
@@ -174,26 +308,56 @@
           {#if showMenu}
             <div class="mode-buttons">
               {#if canContinue}
-                <button type="button" class="btn continue" on:click={continueGame}>
+                <button
+                  type="button"
+                  class="btn continue"
+                  class:selected={isSelected('continue')}
+                  on:mouseenter={() => setSelectedById('continue')}
+                  on:click={continueGame}
+                >
                   <span class="btn-icon" aria-hidden="true">▶</span>
                   <span class="btn-label">Continue</span>
                 </button>
-                <button type="button" class="btn clear" on:click={clearSave}>
+                <button
+                  type="button"
+                  class="btn clear"
+                  class:selected={isSelected('clear')}
+                  on:mouseenter={() => setSelectedById('clear')}
+                  on:click={clearSave}
+                >
                   <span class="btn-icon" aria-hidden="true">✕</span>
                   <span class="btn-label">Clear Save</span>
                 </button>
               {/if}
 
-              <button type="button" class="btn canon" on:click={() => start('anime-canon')}>
+              <button
+                type="button"
+                class="btn canon"
+                class:selected={isSelected('anime-canon')}
+                on:mouseenter={() => setSelectedById('anime-canon')}
+                on:click={() => start('anime-canon')}
+              >
                 <span class="btn-icon" aria-hidden="true">◆</span>
                 <span class="btn-label">Anime Canon</span>
               </button>
-              <button type="button" class="btn divergent" on:click={() => start('divergent')}>
+              <button
+                type="button"
+                class="btn divergent"
+                class:selected={isSelected('divergent')}
+                on:mouseenter={() => setSelectedById('divergent')}
+                on:click={() => start('divergent')}
+              >
                 <span class="btn-icon" aria-hidden="true">◇</span>
                 <span class="btn-label">Divergent Story</span>
               </button>
 
-              <button type="button" class="btn help" on:click={() => (showRules = true)}>
+              <button
+                type="button"
+                class="btn help"
+                class:selected={isSelected('help')}
+                on:mouseenter={() => setSelectedById('help')}
+                on:click={() => (showRules = true)}
+              >
                 <span class="btn-icon" aria-hidden="true">?</span>
                 <span class="btn-label">How to Play</span>
               </button>
@@ -425,6 +589,16 @@
       0 0 8px rgba(200, 0, 0, 0.2),
       inset 0 1px 0 rgba(255, 255, 255, 0.06);
     transform: translateX(1px);
+  }
+
+  .btn.selected {
+    border-color: rgba(200, 0, 0, 0.72);
+    color: #f4e4e4;
+    transform: translateX(2px);
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.62),
+      0 0 11px rgba(200, 0, 0, 0.26),
+      inset 0 1px 0 rgba(255, 255, 255, 0.08);
   }
 
   .btn:active {

@@ -3,7 +3,6 @@
   import { goto } from '$app/navigation';
   import { onDestroy, onMount } from 'svelte';
   import { fade } from 'svelte/transition';
-  import { initMusic, updateMusicLayers, stopMusic } from '$lib/utils/music';
 
 import GBAFrame from '$lib/components/shell/GBAFrame.svelte';
 import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
@@ -39,6 +38,10 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
   let pressedSelect = false;
   let pressedA = false;
   let pressedB = false;
+  let pressedUp = false;
+  let pressedDown = false;
+  let pressedLeft = false;
+  let pressedRight = false;
   let deathFlashActive = false;
   let lGlitchVisible = false;
   let lGlitchReason = '';
@@ -48,14 +51,6 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
   let previousAlertSeq = 0;
   let previousDeathFlashSeq = 0;
   let previousSuspicionMeter = 0;
-  let musicStarted = false;
-
-  const tryStartMusic = () => {
-    if (musicStarted) return;
-    musicStarted = true;
-    initMusic();
-    updateMusicLayers(Math.round($gameState.suspicion.meter));
-  };
 
   $: if (browser && $phase === 'title' && !redirectingToTitle) {
     redirectingToTitle = true;
@@ -90,6 +85,48 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
     }
   };
 
+  const shiftInvestigationTarget = (delta: number) => {
+    if ($gameState.phase !== 'playing') {
+      return;
+    }
+
+    const total = $gameState.investigation.targets.length;
+    if (total <= 1) {
+      return;
+    }
+
+    const current = Math.max(0, Math.min($gameState.investigation.activeTargetIndex, total - 1));
+    const next = (current + delta + total) % total;
+    gameState.setInvestigationTarget(next);
+  };
+
+  const setDualMode = (mode: 'kira' | 'l') => {
+    if ($gameState.phase === 'game-over' || $dualModeView === mode) {
+      return;
+    }
+
+    gameState.dispatch({
+      type: 'APPLY_EFFECTS',
+      effects: [{ type: 'flag.set', key: 'dual_mode', value: mode }]
+    });
+  };
+
+  const triggerUp = () => {
+    shiftInvestigationTarget(-1);
+  };
+
+  const triggerDown = () => {
+    shiftInvestigationTarget(1);
+  };
+
+  const triggerLeft = () => {
+    setDualMode('kira');
+  };
+
+  const triggerRight = () => {
+    setDualMode('l');
+  };
+
   const triggerSelect = () => {
     if ($gameState.phase === 'paused') {
       showRulebook = !showRulebook;
@@ -110,6 +147,10 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
     pressedSelect = false;
     pressedA = false;
     pressedB = false;
+    pressedUp = false;
+    pressedDown = false;
+    pressedLeft = false;
+    pressedRight = false;
   };
 
   const clearDeathFlashTimer = () => {
@@ -179,6 +220,14 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
         pressedA = true;
       } else if (key === 'x') {
         pressedB = true;
+      } else if (key === 'arrowup') {
+        pressedUp = true;
+      } else if (key === 'arrowdown') {
+        pressedDown = true;
+      } else if (key === 'arrowleft') {
+        pressedLeft = true;
+      } else if (key === 'arrowright') {
+        pressedRight = true;
       }
 
       if (event.repeat || $gameState.phase === 'game-over') {
@@ -213,6 +262,30 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
         triggerSelect();
         return;
       }
+
+      if (key === 'arrowup') {
+        event.preventDefault();
+        triggerUp();
+        return;
+      }
+
+      if (key === 'arrowdown') {
+        event.preventDefault();
+        triggerDown();
+        return;
+      }
+
+      if (key === 'arrowleft') {
+        event.preventDefault();
+        triggerLeft();
+        return;
+      }
+
+      if (key === 'arrowright') {
+        event.preventDefault();
+        triggerRight();
+        return;
+      }
     };
 
     const onKeyUp = (event: KeyboardEvent) => {
@@ -226,6 +299,14 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
         pressedA = false;
       } else if (key === 'x') {
         pressedB = false;
+      } else if (key === 'arrowup') {
+        pressedUp = false;
+      } else if (key === 'arrowdown') {
+        pressedDown = false;
+      } else if (key === 'arrowleft') {
+        pressedLeft = false;
+      } else if (key === 'arrowright') {
+        pressedRight = false;
       }
     };
 
@@ -243,11 +324,6 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
         triggerLGlitch('suspicion threshold');
       }
       previousSuspicionMeter = state.suspicion.meter;
-
-      // Update music layers based on suspicion
-      if (musicStarted) {
-        updateMusicLayers(Math.round(state.suspicion.meter));
-      }
 
       const alertSeq = typeof state.flags.suspicion_alert_seq === 'number' ? Math.max(0, state.flags.suspicion_alert_seq) : 0;
       if (alertSeq > previousAlertSeq) {
@@ -274,26 +350,9 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
     };
   });
 
-  // Start music on first user interaction
-  const handleFirstInteraction = () => {
-    tryStartMusic();
-    window.removeEventListener('pointerdown', handleFirstInteraction);
-    window.removeEventListener('keydown', handleFirstInteraction);
-  };
-
-  if (browser) {
-    window.addEventListener('pointerdown', handleFirstInteraction, { passive: true, once: true });
-    window.addEventListener('keydown', handleFirstInteraction, { passive: true, once: true });
-  }
-
   onDestroy(() => {
     clearDeathFlashTimer();
     clearLGlitchTimer();
-    stopMusic();
-    if (browser) {
-      window.removeEventListener('pointerdown', handleFirstInteraction);
-      window.removeEventListener('keydown', handleFirstInteraction);
-    }
   });
 </script>
 
@@ -304,10 +363,18 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
     pressedSelect={pressedSelect}
     pressedA={pressedA}
     pressedB={pressedB}
+    pressedUp={pressedUp}
+    pressedDown={pressedDown}
+    pressedLeft={pressedLeft}
+    pressedRight={pressedRight}
     on:start={triggerStart}
     on:select={triggerSelect}
     on:a={triggerA}
     on:b={triggerB}
+    on:up={triggerUp}
+    on:down={triggerDown}
+    on:left={triggerLeft}
+    on:right={triggerRight}
   >
     <GBAScreen glitchActive={deathFlashActive || lGlitchVisible}>
       <section class="game-screen">
