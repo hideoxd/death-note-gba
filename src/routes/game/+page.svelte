@@ -3,6 +3,7 @@
   import { goto } from '$app/navigation';
   import { onDestroy, onMount } from 'svelte';
   import { fade } from 'svelte/transition';
+  import { initMusic, updateMusicLayers, stopMusic } from '$lib/utils/music';
 
 import GBAFrame from '$lib/components/shell/GBAFrame.svelte';
 import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
@@ -46,6 +47,14 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
   let previousAlertSeq = 0;
   let previousDeathFlashSeq = 0;
   let previousSuspicionMeter = 0;
+  let musicStarted = false;
+
+  const tryStartMusic = () => {
+    if (musicStarted) return;
+    musicStarted = true;
+    initMusic();
+    updateMusicLayers(Math.round($gameState.suspicion.meter));
+  };
 
   $: if (browser && $phase === 'title' && !redirectingToTitle) {
     redirectingToTitle = true;
@@ -234,6 +243,11 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
       }
       previousSuspicionMeter = state.suspicion.meter;
 
+      // Update music layers based on suspicion
+      if (musicStarted) {
+        updateMusicLayers(Math.round(state.suspicion.meter));
+      }
+
       const alertSeq = typeof state.flags.suspicion_alert_seq === 'number' ? Math.max(0, state.flags.suspicion_alert_seq) : 0;
       if (alertSeq > previousAlertSeq) {
         previousAlertSeq = alertSeq;
@@ -259,9 +273,26 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
     };
   });
 
+  // Start music on first user interaction
+  const handleFirstInteraction = () => {
+    tryStartMusic();
+    window.removeEventListener('pointerdown', handleFirstInteraction);
+    window.removeEventListener('keydown', handleFirstInteraction);
+  };
+
+  if (browser) {
+    window.addEventListener('pointerdown', handleFirstInteraction, { passive: true, once: true });
+    window.addEventListener('keydown', handleFirstInteraction, { passive: true, once: true });
+  }
+
   onDestroy(() => {
     clearDeathFlashTimer();
     clearLGlitchTimer();
+    stopMusic();
+    if (browser) {
+      window.removeEventListener('pointerdown', handleFirstInteraction);
+      window.removeEventListener('keydown', handleFirstInteraction);
+    }
   });
 </script>
 

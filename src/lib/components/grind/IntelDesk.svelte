@@ -35,22 +35,57 @@
     return 'SUI';
   };
 
-  const buildInkPath = (value: string): string => {
+  const buildInkPaths = (value: string): { d: string; width: number; delay: number }[] => {
     const charCount = Math.max(1, value.length);
-    const baseline = 17;
-    const usableWidth = Math.min(158, 12 + charCount * 8);
-    const segments = Math.max(2, Math.min(18, charCount + 2));
-    const step = usableWidth / segments;
+    const paths: { d: string; width: number; delay: number }[] = [];
+    const baseline = 14;
+    const charSpacing = Math.min(12, 148 / Math.max(1, charCount));
 
-    let d = `M 4 ${baseline}`;
-    for (let i = 1; i <= segments; i += 1) {
-      const x = 4 + i * step;
-      const arc = i % 2 === 0 ? -2.1 : 2.1;
-      d += ` Q ${x - step * 0.5} ${baseline + arc} ${x} ${baseline}`;
+    for (let i = 0; i < charCount; i += 1) {
+      const x0 = 6 + i * charSpacing;
+      const pressure = 0.6 + Math.random() * 0.6;
+      const jitterY = (Math.random() - 0.5) * 3;
+      const strokeH = 6 + Math.random() * 4;
+
+      // Main vertical stroke
+      const mainD = `M ${x0 + 2} ${baseline - strokeH + jitterY} ` +
+        `Q ${x0 + 1 + Math.random() * 2} ${baseline - strokeH * 0.3 + jitterY} ` +
+        `${x0 + 3 + Math.random()} ${baseline + 2 + jitterY}`;
+
+      paths.push({ d: mainD, width: pressure, delay: i * 60 });
+
+      // Cross stroke for some chars
+      if (i % 3 !== 1 && charSpacing > 6) {
+        const crossY = baseline - strokeH * 0.4 + jitterY;
+        const crossD = `M ${x0} ${crossY} L ${x0 + charSpacing * 0.7} ${crossY + (Math.random() - 0.5) * 2}`;
+        paths.push({ d: crossD, width: pressure * 0.7, delay: i * 60 + 30 });
+      }
     }
 
-    return d;
+    // Underline flourish
+    const endX = Math.min(158, 6 + charCount * charSpacing);
+    const flourishD = `M 4 ${baseline + 5} Q ${endX * 0.5} ${baseline + 3} ${endX} ${baseline + 5.5}`;
+    paths.push({ d: flourishD, width: 0.4, delay: charCount * 60 + 40 });
+
+    return paths;
   };
+
+  let inkBleed = false;
+  let bleedTimer: ReturnType<typeof setTimeout> | null = null;
+
+  const triggerInkBleed = () => {
+    if (bleedTimer) clearTimeout(bleedTimer);
+    inkBleed = false;
+    bleedTimer = setTimeout(() => {
+      inkBleed = true;
+    }, 500);
+  };
+
+  $: if (inkPreview.length > 0) {
+    triggerInkBleed();
+  } else {
+    inkBleed = false;
+  }
 
   let deskMode: DeskMode = 'investigation';
   let notebookNameInput = '';
@@ -125,7 +160,7 @@
     previousInkPreview = inkPreview;
     inkDrawNonce += 1;
   }
-  $: inkPath = buildInkPath(inkPreview);
+  $: inkPaths = buildInkPaths(inkPreview);
   $: eyeNameRows = $shinigamiVisibleNames.slice(0, 3);
 
   const clearHeartbeatTicker = () => {
@@ -344,11 +379,18 @@
         <button type="button" class="prime" on:click={primeName} disabled={!canPrimeName}>INK</button>
       </div>
 
-      <div class="ink-preview" aria-live="polite">
+      <div class="ink-preview" class:ink-bleed={inkBleed} aria-live="polite">
         {#if inkPreview.length > 0}
           {#key inkDrawNonce}
             <svg class="ink-trace" viewBox="0 0 164 24" preserveAspectRatio="none">
-              <path class="ink-path" d={inkPath} in:draw={{ duration: 340 }} />
+              {#each inkPaths as stroke, i}
+                <path
+                  class="ink-path"
+                  d={stroke.d}
+                  style="stroke-width: {stroke.width}; animation-delay: {stroke.delay}ms"
+                  in:draw={{ duration: 280 + i * 40, delay: stroke.delay }}
+                />
+              {/each}
             </svg>
           {/key}
           <p class="ink-preview-text">{inkPreview}</p>
@@ -635,6 +677,13 @@
       repeating-linear-gradient(180deg, transparent 0 3px, rgba(140, 110, 70, 0.08) 3px 4px);
     padding: 2px 3px;
     overflow: hidden;
+    transition: box-shadow 400ms ease;
+  }
+
+  .ink-preview.ink-bleed {
+    box-shadow:
+      inset 0 0 8px rgba(31, 20, 13, 0.15),
+      inset 0 0 3px rgba(120, 80, 40, 0.1);
   }
 
   .ink-trace {
@@ -643,14 +692,21 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
+    filter: url(#ink-turbulence);
   }
 
   .ink-path {
     fill: none;
-    stroke: rgba(31, 20, 13, 0.82);
-    stroke-width: 1;
+    stroke: rgba(31, 20, 13, 0.85);
     stroke-linecap: round;
     stroke-linejoin: round;
+    filter: drop-shadow(0 0 0.5px rgba(20, 10, 5, 0.3));
+  }
+
+  .ink-bleed .ink-path {
+    stroke: rgba(26, 16, 10, 0.75);
+    filter: drop-shadow(0 0.5px 1px rgba(20, 10, 5, 0.2));
+    transition: stroke 300ms ease, filter 500ms ease;
   }
 
   .ink-preview-text {
@@ -663,6 +719,12 @@
     color: #1b120d;
     text-shadow: 0.5px 0.5px 0 rgba(0, 0, 0, 0.24);
     animation: ink-write 360ms ease-out;
+  }
+
+  .ink-bleed .ink-preview-text {
+    text-shadow:
+      0.5px 0.5px 0 rgba(0, 0, 0, 0.24),
+      0 0 2px rgba(31, 20, 13, 0.15);
   }
 
   .prime,

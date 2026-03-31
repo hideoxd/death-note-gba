@@ -356,6 +356,16 @@
       0 2px 3px rgba(0, 0, 0, 0.5);
   }
 
+  .button.pressed::after {
+    content: '';
+    position: absolute;
+    inset: 4px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 100, 100, 0.25) 0%, transparent 70%);
+    animation: btn-ripple 200ms ease-out forwards;
+    pointer-events: none;
+  }
+
   .button span {
     position: absolute;
     top: -14px;
@@ -365,6 +375,12 @@
     font-size: 9px;
     transform: rotate(20deg);
     user-select: none;
+    transition: color 80ms, transform 80ms;
+  }
+
+  .button.pressed span {
+    color: #cc4444;
+    transform: rotate(20deg) scale(0.9);
   }
 
   .start-select {
@@ -408,6 +424,11 @@
       0 0 0 rgba(255, 255, 255, 0);
   }
 
+  .ss-btn.pressed span {
+    color: #888;
+    text-shadow: 0 0 3px rgba(200, 200, 220, 0.15);
+  }
+
   .ss-btn span {
     position: absolute;
     top: -12px;
@@ -448,6 +469,17 @@
     .shell-body {
       padding: 12px;
       border-radius: 16px;
+    }
+  }
+
+  @keyframes btn-ripple {
+    0% {
+      opacity: 1;
+      transform: scale(0.6);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(1.2);
     }
   }
 </style>
