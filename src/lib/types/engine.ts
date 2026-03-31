@@ -8,7 +8,9 @@ export type GameAction =
   | { type: 'CONTINUE_NODE' }
   | { type: 'PERFORM_ACTIVITY'; activityId: string }
   | { type: 'WRITE_JUDGMENT' }
-  | { type: 'PRIME_JUDGMENT_NAME'; enteredName: string }
+  | { type: 'PRIME_JUDGMENT_NAME'; enteredName: string; deadlineMs: number }
+  | { type: 'RESOLVE_PENDING_CAUSE_TIMEOUT'; nowMs: number }
+  | { type: 'TOGGLE_SHINIGAMI_EYE' }
   | { type: 'INVESTIGATE_TARGET_NAME' }
   | { type: 'INVESTIGATE_TARGET_FACE'; source: 'news-clip' | 'social-feed' }
   | { type: 'SELECT_INVESTIGATION_TARGET'; index: number }

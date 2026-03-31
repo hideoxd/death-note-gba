@@ -79,6 +79,8 @@ const defaultFlags = {
   light_dead: false,
   investigation_wave: 1,
   dual_mode: 'kira',
+  shinigami_eye_active: false,
+  pending_cause_deadline_ms: 0,
   divergent_ch2_started: false,
   divergent_ch2_complete: false,
   false_channels: false,

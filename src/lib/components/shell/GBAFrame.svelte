@@ -1,30 +1,70 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
-  import { playNotebookScribble, playTextBlip } from '$lib/utils/sfx';
+  import { playPlasticClick, playTextBlip, vibrateTap } from '$lib/utils/sfx';
 
   export let title = 'Death Note: Kira Protocol';
 
   const dispatch = createEventDispatcher<{
     start: void;
     select: void;
+    a: void;
+    b: void;
   }>();
 
   const triggerStart = () => {
     playTextBlip();
+    vibrateTap(14);
     dispatch('start');
   };
 
   const triggerSelect = () => {
     playTextBlip();
+    vibrateTap(14);
     dispatch('select');
   };
 
   const clickPlastic = () => {
-    playNotebookScribble();
+    playPlasticClick();
+  };
+
+  const triggerA = () => {
+    clickPlastic();
+    dispatch('a');
+  };
+
+  const triggerB = () => {
+    clickPlastic();
+    dispatch('b');
+  };
+
+  let tiltX = 0;
+  let tiltY = 0;
+
+  const handleTilt = (event: MouseEvent) => {
+    const target = event.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const dx = (event.clientX - cx) / (rect.width / 2);
+    const dy = (event.clientY - cy) / (rect.height / 2);
+    tiltY = Math.max(-4, Math.min(4, dx * 3.6));
+    tiltX = Math.max(-3, Math.min(3, -dy * 2.8));
+  };
+
+  const resetTilt = () => {
+    tiltX = 0;
+    tiltY = 0;
   };
 </script>
 
-<div class="gba-shell" aria-label={title}>
+<div
+  class="gba-shell"
+  role="img"
+  aria-label={title}
+  on:mousemove={handleTilt}
+  on:mouseleave={resetTilt}
+  style="transform: perspective(1200px) rotateX({tiltX}deg) rotateY({tiltY}deg);"
+>
   <div class="shell-body">
     <!-- Left controls -->
     <div class="dpad-area">
@@ -49,8 +89,8 @@
     <!-- Right controls -->
     <div class="buttons-area">
       <div class="action-buttons">
-        <button type="button" class="button b-btn" aria-label="B button" on:click={clickPlastic}><span>B</span></button>
-        <button type="button" class="button a-btn" aria-label="A button" on:click={clickPlastic}><span>A</span></button>
+        <button type="button" class="button b-btn" aria-label="B button" on:click={triggerB}><span>B</span></button>
+        <button type="button" class="button a-btn" aria-label="A button" on:click={triggerA}><span>A</span></button>
       </div>
       <div class="start-select">
         <button
@@ -86,6 +126,8 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    transition: transform 120ms ease-out;
+    will-change: transform;
   }
 
   .shell-body {

@@ -35,6 +35,7 @@
       );
     opacity: 0.55;
     mix-blend-mode: overlay;
+    animation: crt-flicker 1.8s steps(3, end) infinite;
   }
 
   /* Screen reflection */
@@ -72,5 +73,21 @@
   @keyframes sweep {
     0% { top: -3px; }
     100% { top: 100%; }
+  }
+
+  @keyframes crt-flicker {
+    0%,
+    100% {
+      opacity: 0.55;
+    }
+    48% {
+      opacity: 0.5;
+    }
+    50% {
+      opacity: 0.62;
+    }
+    52% {
+      opacity: 0.54;
+    }
   }
 </style>

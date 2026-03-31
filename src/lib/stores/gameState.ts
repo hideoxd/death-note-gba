@@ -49,6 +49,8 @@ const normalizeSnapshot = (snapshot: GameState): GameState => {
 
   const pendingCauseTarget = normalizeFlagValue(partial.flags?.pending_cause_target);
   const pendingCauseBlocks = normalizeFlagValue(partial.flags?.pending_cause_blocks);
+  const pendingCauseDeadlineMs = normalizeFlagValue(partial.flags?.pending_cause_deadline_ms);
+  const shinigamiEyeActive = normalizeFlagValue(partial.flags?.shinigami_eye_active);
 
   const next: GameState = {
     ...base,
@@ -58,7 +60,10 @@ const normalizeSnapshot = (snapshot: GameState): GameState => {
       ...base.flags,
       ...(partial.flags ?? {}),
       pending_cause_target: typeof pendingCauseTarget === 'string' ? pendingCauseTarget : '',
-      pending_cause_blocks: typeof pendingCauseBlocks === 'number' ? Math.max(0, Math.floor(pendingCauseBlocks)) : 0
+      pending_cause_blocks: typeof pendingCauseBlocks === 'number' ? Math.max(0, Math.floor(pendingCauseBlocks)) : 0,
+      pending_cause_deadline_ms:
+        typeof pendingCauseDeadlineMs === 'number' ? Math.max(0, Math.floor(pendingCauseDeadlineMs)) : 0,
+      shinigami_eye_active: typeof shinigamiEyeActive === 'boolean' ? shinigamiEyeActive : false
     },
     stats: {
       ...base.stats,
@@ -125,8 +130,13 @@ const createGameStateStore = () => {
 
     writeJudgment: () => update((state) => gameReducer(state, { type: 'WRITE_JUDGMENT' })),
 
-    primeJudgmentName: (enteredName: string) =>
-      update((state) => gameReducer(state, { type: 'PRIME_JUDGMENT_NAME', enteredName })),
+    primeJudgmentName: (enteredName: string, deadlineMs: number) =>
+      update((state) => gameReducer(state, { type: 'PRIME_JUDGMENT_NAME', enteredName, deadlineMs })),
+
+    resolvePendingCauseTimeout: (nowMs: number) =>
+      update((state) => gameReducer(state, { type: 'RESOLVE_PENDING_CAUSE_TIMEOUT', nowMs })),
+
+    toggleShinigamiEye: () => update((state) => gameReducer(state, { type: 'TOGGLE_SHINIGAMI_EYE' })),
 
     investigateTargetName: () =>
       update((state) => gameReducer(state, { type: 'INVESTIGATE_TARGET_NAME' })),

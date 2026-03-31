@@ -93,8 +93,11 @@ npm run preview
 
 ### Keyboard shortcuts
 
+- `Z`: `A` button emulation (quick notebook write in-game)
+- `X`: `B` button emulation (quick skip block in-game)
 - `Enter`: START button emulation (title start/continue, in-game pause toggle)
 - `Shift`: SELECT button emulation (title help toggle, in-game log toggle)
+- `Ctrl+Alt+S` or `Ctrl+Alt+L`: toggle Shinigami Eye filter (halves Willpower)
 
 ## Save Data
 

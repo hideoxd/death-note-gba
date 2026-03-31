@@ -133,33 +133,11 @@ const getRecentRegionalEliminations = (state: GameState, region: InvestigationRe
     .length;
 };
 
-const applyPendingCauseCountdown = (state: GameState): GameState => {
+const resolvePendingCauseTimeout = (state: GameState): GameState => {
   const pendingTargetId = state.flags.pending_cause_target;
-  const pendingBlocks = state.flags.pending_cause_blocks;
 
   if (typeof pendingTargetId !== 'string' || !pendingTargetId) {
     return state;
-  }
-
-  if (typeof pendingBlocks !== 'number') {
-    return state;
-  }
-
-  if (pendingBlocks > 0) {
-    const decremented = pendingBlocks - 1;
-    const decrementedState: GameState = {
-      ...state,
-      flags: {
-        ...state.flags,
-        pending_cause_blocks: decremented
-      }
-    };
-
-    if (decremented > 0) {
-      return decrementedState;
-    }
-
-    state = decrementedState;
   }
 
   const targetIndex = state.investigation.targets.findIndex((target) => target.id === pendingTargetId);
@@ -169,7 +147,8 @@ const applyPendingCauseCountdown = (state: GameState): GameState => {
       flags: {
         ...state.flags,
         pending_cause_target: '',
-        pending_cause_blocks: 0
+        pending_cause_blocks: 0,
+        pending_cause_deadline_ms: 0
       }
     };
   }
@@ -181,7 +160,8 @@ const applyPendingCauseCountdown = (state: GameState): GameState => {
       flags: {
         ...state.flags,
         pending_cause_target: '',
-        pending_cause_blocks: 0
+        pending_cause_blocks: 0,
+        pending_cause_deadline_ms: 0
       }
     };
   }
@@ -196,7 +176,8 @@ const applyPendingCauseCountdown = (state: GameState): GameState => {
         flags: {
           ...state.flags,
           pending_cause_target: '',
-          pending_cause_blocks: 0
+          pending_cause_blocks: 0,
+          pending_cause_deadline_ms: 0
         }
       },
       'system',
@@ -246,7 +227,8 @@ const applyPendingCauseCountdown = (state: GameState): GameState => {
     flags: {
       ...state.flags,
       pending_cause_target: '',
-      pending_cause_blocks: 0
+      pending_cause_blocks: 0,
+      pending_cause_deadline_ms: 0
     }
   };
 
@@ -260,6 +242,38 @@ const applyPendingCauseCountdown = (state: GameState): GameState => {
 
   next = pushLog(next, 'system', `40-second limit elapsed. ${target.trueName} defaults to Heart Attack.`);
   return next;
+};
+
+const applyPendingCauseCountdown = (state: GameState): GameState => {
+  const pendingTargetId = state.flags.pending_cause_target;
+  const pendingBlocks = state.flags.pending_cause_blocks;
+
+  if (typeof pendingTargetId !== 'string' || !pendingTargetId) {
+    return state;
+  }
+
+  if (typeof pendingBlocks !== 'number') {
+    return state;
+  }
+
+  if (pendingBlocks > 0) {
+    const decremented = pendingBlocks - 1;
+    const decrementedState: GameState = {
+      ...state,
+      flags: {
+        ...state.flags,
+        pending_cause_blocks: decremented
+      }
+    };
+
+    if (decremented > 0) {
+      return decrementedState;
+    }
+
+    state = decrementedState;
+  }
+
+  return resolvePendingCauseTimeout(state);
 };
 
 const refreshInvestigationWave = (state: GameState): GameState => {
@@ -525,7 +539,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         flags: {
           ...state.flags,
           pending_cause_target: target.id,
-          pending_cause_blocks: causeTimeoutBlocks
+          pending_cause_blocks: causeTimeoutBlocks,
+          pending_cause_deadline_ms: action.deadlineMs
         }
       };
 
@@ -723,7 +738,8 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         flags: {
           ...next.flags,
           pending_cause_target: '',
-          pending_cause_blocks: 0
+          pending_cause_blocks: 0,
+          pending_cause_deadline_ms: 0
         }
       };
 
@@ -742,6 +758,57 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       }
 
       return finalizeActionStep(next);
+    }
+
+    case 'RESOLVE_PENDING_CAUSE_TIMEOUT': {
+      const deadline = state.flags.pending_cause_deadline_ms;
+      if (typeof deadline !== 'number' || deadline <= 0) {
+        return state;
+      }
+
+      if (action.nowMs < deadline) {
+        return state;
+      }
+
+      return resolvePendingCauseTimeout({
+        ...state,
+        flags: {
+          ...state.flags,
+          pending_cause_blocks: 0
+        }
+      });
+    }
+
+    case 'TOGGLE_SHINIGAMI_EYE': {
+      const active = Boolean(state.flags.shinigami_eye_active);
+
+      if (active) {
+        return {
+          ...state,
+          flags: {
+            ...state.flags,
+            shinigami_eye_active: false
+          }
+        };
+      }
+
+      if (state.stats.willpower <= 1) {
+        return pushLog(state, 'system', 'Shinigami Eyes failed: insufficient life force.');
+      }
+
+      const next: GameState = {
+        ...state,
+        stats: {
+          ...state.stats,
+          willpower: Math.max(0, Math.floor(state.stats.willpower / 2))
+        },
+        flags: {
+          ...state.flags,
+          shinigami_eye_active: true
+        }
+      };
+
+      return pushLog(next, 'system', 'Shinigami Eyes activated. Half of your life force is consumed.');
     }
 
     case 'SELECT_CHOICE': {

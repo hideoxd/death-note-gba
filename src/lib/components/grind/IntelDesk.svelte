@@ -3,7 +3,7 @@
 
   import { gameState } from '$lib/stores/gameState';
   import { dualModeView, pendingCauseCountdown } from '$lib/stores/selectors';
-  import { playNotebookScribble } from '$lib/utils/sfx';
+  import { playHeartbeatLoop, playHeartbeatThud, playNotebookScribble, stopHeartbeatLoop } from '$lib/utils/sfx';
 
   import type { DeathCause } from '$lib/types/game';
 
@@ -24,6 +24,8 @@
 
   let deskMode: DeskMode = 'investigation';
   let notebookNameInput = '';
+  let heartbeatTimer: ReturnType<typeof setInterval> | null = null;
+  let nowMs = 0;
 
   $: targets = $gameState.investigation.targets;
   $: targetCount = targets.length;
@@ -70,6 +72,9 @@
   })();
 
   $: countdownActive = $pendingCauseCountdown && activeTarget?.id === $pendingCauseCountdown.targetId;
+  $: secondsLeft = countdownActive
+    ? Math.max(0, Math.ceil((($pendingCauseCountdown?.deadlineMs ?? 0) - nowMs) / 1000))
+    : 0;
   $: canPrimeName = Boolean(
     activeTarget &&
       !activeTarget.eliminated &&
@@ -103,14 +108,43 @@
 
   const writeJudgment = () => {
     if (!canWriteJudgment) return;
+    stopHeartbeatLoop();
     playNotebookScribble();
     gameState.writeJudgment();
   };
 
   const primeName = () => {
     if (!canPrimeName) return;
-    gameState.primeJudgmentName(notebookNameInput);
+    const deadlineMs = Date.now() + 40_000;
+    playHeartbeatLoop();
+    gameState.primeJudgmentName(notebookNameInput, deadlineMs);
   };
+
+  const clearHeartbeatTimer = () => {
+    if (!heartbeatTimer) return;
+    clearInterval(heartbeatTimer);
+    heartbeatTimer = null;
+  };
+
+  $: {
+    if (!countdownActive) {
+      clearHeartbeatTimer();
+      stopHeartbeatLoop();
+    } else if (!heartbeatTimer) {
+      nowMs = Date.now();
+      heartbeatTimer = setInterval(() => {
+        nowMs = Date.now();
+
+        const deadline = $pendingCauseCountdown?.deadlineMs ?? 0;
+        if (deadline > 0 && nowMs >= deadline) {
+          playHeartbeatThud();
+          stopHeartbeatLoop();
+          gameState.resolvePendingCauseTimeout(nowMs);
+          clearHeartbeatTimer();
+        }
+      }, 120);
+    }
+  }
 </script>
 
 <section class="intel-desk">
@@ -140,7 +174,12 @@
       <button type="button" class="mini" on:click={() => shiftTarget(-1)} disabled={targetCount <= 1}>◂</button>
 
       <div class="target-meta">
-        <p class="target">T{activeIndex + 1}: {activeTarget.alias}</p>
+        <p class="target">
+          T{activeIndex + 1}: {activeTarget.alias}
+          {#if activeTarget.knownName}
+            <span class="ink-name"> / {activeTarget.trueName}</span>
+          {/if}
+        </p>
         <p class="intel-state">
           <span class:ok={activeTarget.knownName}>N</span>
           <span class:ok={activeTarget.knownFace}>F</span>
@@ -204,7 +243,7 @@
         <button type="button" class="prime" on:click={primeName} disabled={!canPrimeName}>INK</button>
       </div>
       {#if countdownActive}
-        <p class="timer">40s window: {$pendingCauseCountdown?.blocksRemaining ?? 0} block(s) left</p>
+        <p class="timer">40s window: {secondsLeft}s left</p>
       {/if}
       <p class="cost">Intel {causeSpec.intel} | Will {causeSpec.willpower}</p>
       <button type="button" class="judgment" on:click={writeJudgment} disabled={!canWriteJudgment}>WRITE</button>
@@ -289,6 +328,25 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+  }
+
+  .ink-name {
+    color: #d6c184;
+    animation: scratch-ink 420ms ease-out;
+    display: inline-block;
+  }
+
+  @keyframes scratch-ink {
+    from {
+      opacity: 0;
+      clip-path: inset(0 100% 0 0);
+      transform: translateX(-2px);
+    }
+    to {
+      opacity: 1;
+      clip-path: inset(0 0 0 0);
+      transform: translateX(0);
+    }
   }
 
   .intel-state {

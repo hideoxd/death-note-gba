@@ -75,6 +75,15 @@ export const worldTimeline = derived(gameState, ($state): TimelineEntry[] => {
       tone: 'urgent'
     });
   }
+
+  if ($state.flags.shinigami_eye_active === true) {
+    entries.push({
+      id: 'timeline-eye-active',
+      headline: 'Shinigami Eye',
+      detail: 'Forbidden perception active. Identities are visible at severe life cost.',
+      tone: 'danger'
+    });
+  }
   }
 
   entries.push({

@@ -413,11 +413,15 @@ export const pendingCauseCountdown = derived(gameState, ($state) => {
     return null;
   }
 
+  const deadlineMs =
+    typeof $state.flags.pending_cause_deadline_ms === 'number' ? $state.flags.pending_cause_deadline_ms : 0;
+
   return {
     targetId: pendingTargetId,
     alias: target.alias,
     region: target.region,
     blocksRemaining: typeof blocksRemaining === 'number' ? Math.max(0, blocksRemaining) : 0,
+    deadlineMs,
     willDefaultTo: 'heart-attack' as const
   };
 });
@@ -458,6 +462,8 @@ export const patternData = derived(gameState, ($state) => {
 export const dualModeView = derived(gameState, ($state) => {
   return $state.flags.dual_mode === 'l' ? 'l' : 'kira';
 });
+
+export const shinigamiEyeActive = derived(gameState, ($state) => Boolean($state.flags.shinigami_eye_active));
 
 export const unreachableCurrentNode = derived(gameState, ($state) => {
   const node = getCurrentNode($state);

@@ -13,6 +13,18 @@ type PlayToneArgs = {
 let audioContext: AudioContext | null = null;
 let listenersAttached = false;
 let lastBlipAt = 0;
+let heartbeatInterval: ReturnType<typeof setInterval> | null = null;
+let heartbeatStep = 0;
+
+const vibrate = (durationMs = 14): void => {
+  if (!browser || typeof navigator === 'undefined') {
+    return;
+  }
+
+  if (typeof navigator.vibrate === 'function') {
+    navigator.vibrate(durationMs);
+  }
+};
 
 const ensureContext = (): AudioContext | null => {
   if (!browser) {
@@ -103,6 +115,25 @@ export const playTextBlip = (): void => {
   });
 };
 
+export const vibrateTap = (durationMs = 14): void => {
+  vibrate(durationMs);
+};
+
+export const playPlasticClick = (): void => {
+  const level = getSfxGain();
+  if (level <= 0) {
+    return;
+  }
+
+  vibrate(12);
+  playTone({
+    frequency: 180 + Math.random() * 40,
+    durationMs: 42,
+    type: 'triangle',
+    gain: 0.02 * level
+  });
+};
+
 export const playNotebookScribble = (): void => {
   const level = getSfxGain();
   if (level <= 0) {
@@ -141,4 +172,55 @@ export const playGlitchBoot = (): void => {
       });
     }, i * 52);
   }
+};
+
+export const playHeartbeatLoop = (): void => {
+  if (heartbeatInterval) {
+    return;
+  }
+
+  const level = getSfxGain();
+  if (level <= 0) {
+    return;
+  }
+
+  heartbeatStep = 0;
+  heartbeatInterval = setInterval(() => {
+    const gain = 0.018 * getSfxGain();
+    const accent = heartbeatStep % 2 === 0 ? 1 : 0.72;
+
+    playTone({
+      frequency: 94 + (heartbeatStep % 3) * 4,
+      durationMs: 75,
+      type: 'sine',
+      gain: gain * accent
+    });
+
+    heartbeatStep += 1;
+  }, 620);
+};
+
+export const stopHeartbeatLoop = (): void => {
+  if (!heartbeatInterval) {
+    return;
+  }
+
+  clearInterval(heartbeatInterval);
+  heartbeatInterval = null;
+  heartbeatStep = 0;
+};
+
+export const playHeartbeatThud = (): void => {
+  const level = getSfxGain();
+  if (level <= 0) {
+    return;
+  }
+
+  playTone({
+    frequency: 58,
+    durationMs: 180,
+    type: 'triangle',
+    gain: 0.045 * level
+  });
+  vibrate(24);
 };

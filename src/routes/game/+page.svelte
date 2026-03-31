@@ -28,7 +28,7 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
 
   import { gameState } from '$lib/stores/gameState';
   import { uiState } from '$lib/stores/uiState';
-  import { dualModeView, isGameOver, phase } from '$lib/stores/selectors';
+  import { dualModeView, isGameOver, phase, shinigamiEyeActive } from '$lib/stores/selectors';
 
   let redirectingToTitle = false;
   let showRulebook = false;
@@ -52,6 +52,18 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
 
   const triggerStart = () => {
     togglePause();
+  };
+
+  const triggerA = () => {
+    if ($gameState.phase === 'playing') {
+      gameState.writeJudgment();
+    }
+  };
+
+  const triggerB = () => {
+    if ($gameState.phase === 'playing') {
+      gameState.advanceTime(1);
+    }
   };
 
   const triggerSelect = () => {
@@ -85,9 +97,33 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
         return;
       }
 
+      if (event.key.toLowerCase() === 'z') {
+        event.preventDefault();
+        triggerA();
+        return;
+      }
+
+      if (event.key.toLowerCase() === 'x') {
+        event.preventDefault();
+        triggerB();
+        return;
+      }
+
       if (event.key === 'Shift') {
         event.preventDefault();
         triggerSelect();
+        return;
+      }
+
+      if (event.key.toLowerCase() === 's' && event.ctrlKey && event.altKey) {
+        event.preventDefault();
+        gameState.toggleShinigamiEye();
+        return;
+      }
+
+      if (event.key.toLowerCase() === 'l' && event.ctrlKey && event.altKey) {
+        event.preventDefault();
+        gameState.toggleShinigamiEye();
       }
     };
 
@@ -97,18 +133,19 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
     const unsubscribe = gameState.subscribe((state) => {
       body.classList.toggle('phase-l-alert', state.suspicion.meter >= 60 && state.suspicion.meter < 85);
       body.classList.toggle('phase-l-critical', state.suspicion.meter >= 85);
+      body.classList.toggle('shinigami-eye', state.flags.shinigami_eye_active === true);
     });
 
     return () => {
       unsubscribe();
-      document.body.classList.remove('phase-l-alert', 'phase-l-critical');
+      document.body.classList.remove('phase-l-alert', 'phase-l-critical', 'shinigami-eye');
       window.removeEventListener('keydown', onKeyDown);
     };
   });
 </script>
 
 <main class="game-page">
-  <GBAFrame title="Death Note Gameplay" on:start={triggerStart} on:select={triggerSelect}>
+  <GBAFrame title="Death Note Gameplay" on:start={triggerStart} on:select={triggerSelect} on:a={triggerA} on:b={triggerB}>
     <GBAScreen>
       <section class="game-screen">
         <TopBar />
@@ -130,6 +167,9 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
               <PatternTerminal />
             {/if}
             <CanonTracker />
+            {#if $shinigamiEyeActive}
+              <div class="eye-indicator">EYE ON</div>
+            {/if}
             {#if $uiState.showLogPanel}
               <div in:fade={{ duration: 120 }} out:fade={{ duration: 90 }}>
                 <LogPanel />
@@ -254,5 +294,29 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
     background: linear-gradient(180deg, rgba(45, 15, 15, 0.95) 0%, rgba(28, 8, 8, 0.95) 100%);
     border-color: rgba(200, 0, 0, 0.4);
     color: #c0b0b0;
+  }
+
+  .eye-indicator {
+    border: 1px solid rgba(210, 60, 60, 0.34);
+    background: linear-gradient(180deg, rgba(48, 9, 15, 0.9) 0%, rgba(24, 5, 9, 0.9) 100%);
+    color: #e17a7a;
+    padding: 1px 2px;
+    font-size: 4px;
+    font-family: var(--font-pixel, monospace);
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+    text-align: center;
+    animation: eye-blink 520ms steps(2, end) infinite;
+  }
+
+  @keyframes eye-blink {
+    0%,
+    49% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0.45;
+    }
   }
 </style>

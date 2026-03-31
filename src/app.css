@@ -105,6 +105,22 @@ body.phase-l-critical::after {
   animation: hq-flicker 340ms steps(2, end) infinite;
 }
 
+body.shinigami-eye::before {
+  filter: hue-rotate(-18deg) saturate(1.45) brightness(0.95);
+}
+
+body.shinigami-eye::after {
+  opacity: 0.9;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(160, 16, 16, 0.24) 0%, transparent 65%),
+    repeating-linear-gradient(
+      90deg,
+      rgba(220, 40, 40, 0.06) 0 1px,
+      rgba(10, 0, 0, 0.02) 1px 3px
+    );
+  animation: eye-glitch 230ms steps(2, end) infinite;
+}
+
 @keyframes bg-pulse {
   0% { opacity: 0.8; }
   100% { opacity: 1; }
@@ -118,6 +134,16 @@ body.phase-l-critical::after {
   }
   50% {
     filter: hue-rotate(6deg) saturate(1.25);
+  }
+}
+
+@keyframes eye-glitch {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(1px);
   }
 }
 
