@@ -90,6 +90,7 @@ const defaultFlags = {
   suspicion_alert_seq: 0,
   suspicion_alert_reason: '',
   death_flash_seq: 0,
+  world_opinion: 0,
   divergent_ch2_started: false,
   divergent_ch2_complete: false,
   false_channels: false,

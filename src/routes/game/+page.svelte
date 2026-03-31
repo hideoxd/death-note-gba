@@ -15,6 +15,7 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
   import TimeBlockPanel from '$lib/components/hud/TimeBlockPanel.svelte';
   import StatPanel from '$lib/components/hud/StatPanel.svelte';
   import SuspicionMeter from '$lib/components/hud/SuspicionMeter.svelte';
+  import WorldOpinion from '$lib/components/hud/WorldOpinion.svelte';
 
   import SceneViewport from '$lib/components/narrative/SceneViewport.svelte';
   import ActivityGrid from '$lib/components/grind/ActivityGrid.svelte';
@@ -324,6 +325,7 @@ import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
             <TimeBlockPanel />
             <StatPanel />
             <SuspicionMeter />
+            <WorldOpinion />
             <IntelDesk />
             {#if $dualModeView === 'l'}
               <PatternTerminal />

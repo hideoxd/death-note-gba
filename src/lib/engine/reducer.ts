@@ -89,6 +89,18 @@ const lInterventionThreshold = 85;
 const shinigamiEyeDrainPerBlock = 6;
 const shinigamiEyeActivationCost = 8;
 
+// ── World Opinion ──
+const baseOpinionShiftPerExecution: Record<DeathCause, number> = {
+  'heart-attack': 6,   // Heart attacks are the Kira signature → more opinion impact
+  accident: 3,
+  poisoning: 4,
+  suicide: 5
+};
+const decoyOpinionPenalty = 20;     // Killing an innocent spikes anti-Kira sentiment
+const opinionDecayPerBlock = 1.5;   // Drifts toward neutral each time block
+const hostileOpinionThreshold = 50; // Above this, intel gathering gets penalized
+const hostileIntelSuspicionBonus = 2;
+
 const targetAliasPool = [
   'Insider Trading Broker',
   'Counterfeit Passport Runner',
@@ -168,6 +180,31 @@ const triggerDeathPulse = (state: GameState): GameState => {
       death_flash_seq: nextFlagCounter(state.flags.death_flash_seq)
     }
   };
+};
+
+const updateWorldOpinion = (state: GameState, delta: number): GameState => {
+  const current = typeof state.flags.world_opinion === 'number' ? state.flags.world_opinion : 0;
+  const next = clamp(current + delta, -100, 100);
+  return {
+    ...state,
+    flags: {
+      ...state.flags,
+      world_opinion: next
+    }
+  };
+};
+
+const applyOpinionDecay = (state: GameState): GameState => {
+  const current = typeof state.flags.world_opinion === 'number' ? state.flags.world_opinion : 0;
+  if (current === 0) return state;
+  const decay = Math.sign(current) * Math.min(Math.abs(current), opinionDecayPerBlock);
+  return updateWorldOpinion(state, -decay);
+};
+
+const getOpinionHostilePenalty = (state: GameState): number => {
+  const opinion = typeof state.flags.world_opinion === 'number' ? state.flags.world_opinion : 0;
+  if (opinion < hostileOpinionThreshold) return 0;
+  return hostileIntelSuspicionBonus;
 };
 
 const applyExecutionContextPenalties = (
@@ -424,6 +461,7 @@ const advanceTimeStep = (state: GameState, blocks = 1): GameState => {
   next = evaluateCanonTimeline(next);
   next = refreshInvestigationWave(next);
   next = applyPendingCauseCountdown(next);
+  next = applyOpinionDecay(next);
 
   return next;
 };
@@ -696,7 +734,10 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         }
       };
 
-      next = applySuspicionDelta(next, 3, 'police_database_probe');
+      next = applySuspicionDelta(next, 3 + getOpinionHostilePenalty(next), 'police_database_probe');
+      if (getOpinionHostilePenalty(next) > 0) {
+        next = pushLog(next, 'system', 'Hostile public opinion makes intel work riskier.');
+      }
       next = pushLog(next, 'action', `Database trace complete: name acquired for ${target.alias}.`);
       return finalizeActionStep(next);
     }
@@ -859,6 +900,18 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
 
       next = applyExecutionContextPenalties(next, target);
       next = triggerLInterventionIfNeeded(state, next, target.isDecoy ? 'decoy_execution' : `execution_${cause}`);
+
+      // World Opinion shift
+      if (target.isDecoy) {
+        next = updateWorldOpinion(next, decoyOpinionPenalty);
+        next = pushLog(next, 'system', 'Public outrage: an innocent was killed. Anti-Kira sentiment surges.');
+      } else {
+        // Criminals lower opinion (public supports Kira cleaning up crime)
+        // but heart attacks are more suspicious pattern-wise
+        const opinionShift = -baseOpinionShiftPerExecution[cause] + (cause === 'heart-attack' ? 2 : 0);
+        next = updateWorldOpinion(next, opinionShift);
+      }
+
       next = pushLog(next, 'action', `Judgment written: ${target.trueName} (${deathCauseLabels[cause]}).`);
 
       if (next.investigation.targets.every((entry) => entry.eliminated)) {

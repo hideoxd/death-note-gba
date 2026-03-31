@@ -268,6 +268,11 @@ export const gameplayHint = derived(gameState, ($state) => {
     return 'Critical suspicion: prioritize alibi and social cover immediately.';
   }
 
+  const worldOpinion = typeof $state.flags.world_opinion === 'number' ? $state.flags.world_opinion : 0;
+  if (worldOpinion >= 60) {
+    return 'Public opinion is hostile: intel operations are penalized. Vary your methods to calm fears.';
+  }
+
   if ($state.suspicion.meter >= SUSPICION_RULES.thresholds.activeInvestigation) {
     return 'Investigation is intense. Alternate Intel with safe activities.';
   }

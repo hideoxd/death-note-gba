@@ -112,5 +112,37 @@ export const worldTimeline = derived(gameState, ($state): TimelineEntry[] => {
     tone: day >= 7 ? 'urgent' : 'neutral'
   });
 
+  // World Opinion ticker entry
+  const worldOpinion = typeof $state.flags.world_opinion === 'number' ? $state.flags.world_opinion : 0;
+  if (worldOpinion >= 60) {
+    entries.push({
+      id: 'timeline-opinion',
+      headline: 'Public Sentiment',
+      detail: 'Anti-Kira protests erupt nationwide. Public calls for Kira to face justice.',
+      tone: 'critical'
+    });
+  } else if (worldOpinion >= 30) {
+    entries.push({
+      id: 'timeline-opinion',
+      headline: 'Public Sentiment',
+      detail: 'Fear of Kira spreads. Citizens report neighbors to police. Vigilante groups form.',
+      tone: 'danger'
+    });
+  } else if (worldOpinion <= -40) {
+    entries.push({
+      id: 'timeline-opinion',
+      headline: 'Public Sentiment',
+      detail: 'Kira worship reaches epidemic levels. Underground shrines and fan sites multiply.',
+      tone: 'urgent'
+    });
+  } else if (worldOpinion <= -10) {
+    entries.push({
+      id: 'timeline-opinion',
+      headline: 'Public Sentiment',
+      detail: 'Growing public support for Kira: crime rates drop as fear of divine judgment takes hold.',
+      tone: 'neutral'
+    });
+  }
+
   return entries;
 });
