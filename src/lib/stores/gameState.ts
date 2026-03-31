@@ -12,6 +12,20 @@ const isDeathCause = (value: unknown): value is DeathCause => {
   return value === 'heart-attack' || value === 'accident' || value === 'poisoning' || value === 'suicide';
 };
 
+const regions = ['kanto', 'kansai', 'tohoku', 'kyushu'] as const;
+
+const isRegion = (value: unknown): value is (typeof regions)[number] => {
+  return typeof value === 'string' && (regions as readonly string[]).includes(value);
+};
+
+const normalizeFlagValue = (value: unknown): boolean | number | string | undefined => {
+  if (typeof value === 'boolean' || typeof value === 'number' || typeof value === 'string') {
+    return value;
+  }
+
+  return undefined;
+};
+
 const normalizeSnapshot = (snapshot: GameState): GameState => {
   const base = createInitialGameState(snapshot.mode ?? 'anime-canon', snapshot.phase ?? 'playing');
   const partial = snapshot as Partial<GameState>;
@@ -19,17 +33,33 @@ const normalizeSnapshot = (snapshot: GameState): GameState => {
   const stats = partial.stats ?? base.stats;
   const rawInvestigation = partial.investigation;
   const hasTargets = Array.isArray(rawInvestigation?.targets) && rawInvestigation.targets.length > 0;
-  const targets = hasTargets ? rawInvestigation.targets : base.investigation.targets;
+  const targets = hasTargets
+    ? rawInvestigation.targets.map((target, index) => ({
+        ...target,
+        region: isRegion((target as { region?: unknown }).region)
+          ? (target as { region: (typeof regions)[number] }).region
+          : regions[index % regions.length]
+      }))
+    : base.investigation.targets;
   const maxTargetIndex = Math.max(0, targets.length - 1);
 
   const selectedCause = isDeathCause(rawInvestigation?.selectedCause)
     ? rawInvestigation.selectedCause
     : base.investigation.selectedCause;
 
+  const pendingCauseTarget = normalizeFlagValue(partial.flags?.pending_cause_target);
+  const pendingCauseBlocks = normalizeFlagValue(partial.flags?.pending_cause_blocks);
+
   const next: GameState = {
     ...base,
     ...snapshot,
     version: Math.max(snapshot.version ?? 1, 2),
+    flags: {
+      ...base.flags,
+      ...(partial.flags ?? {}),
+      pending_cause_target: typeof pendingCauseTarget === 'string' ? pendingCauseTarget : '',
+      pending_cause_blocks: typeof pendingCauseBlocks === 'number' ? Math.max(0, Math.floor(pendingCauseBlocks)) : 0
+    },
     stats: {
       ...base.stats,
       ...stats,
@@ -45,7 +75,12 @@ const normalizeSnapshot = (snapshot: GameState): GameState => {
       selectedCause,
       targets,
       eliminationLog: Array.isArray(rawInvestigation?.eliminationLog)
-        ? rawInvestigation.eliminationLog
+        ? rawInvestigation.eliminationLog.map((entry, index) => ({
+            ...entry,
+            region: isRegion((entry as { region?: unknown }).region)
+              ? (entry as { region: (typeof regions)[number] }).region
+              : regions[index % regions.length]
+          }))
         : base.investigation.eliminationLog
     }
   };
@@ -89,6 +124,9 @@ const createGameStateStore = () => {
       update((state) => gameReducer(state, { type: 'PERFORM_ACTIVITY', activityId })),
 
     writeJudgment: () => update((state) => gameReducer(state, { type: 'WRITE_JUDGMENT' })),
+
+    primeJudgmentName: (enteredName: string) =>
+      update((state) => gameReducer(state, { type: 'PRIME_JUDGMENT_NAME', enteredName })),
 
     investigateTargetName: () =>
       update((state) => gameReducer(state, { type: 'INVESTIGATE_TARGET_NAME' })),

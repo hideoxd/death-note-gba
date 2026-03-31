@@ -9,7 +9,7 @@ import { applySuspicionDelta, recalculateSuspicion } from '$lib/engine/suspicion
 import { advanceClock } from '$lib/engine/time';
 import { clamp } from '$lib/utils/clamp';
 import type { GameAction } from '$lib/types/engine';
-import type { DeathCause, GameState, TimeBlock } from '$lib/types/game';
+import type { DeathCause, GameState, InvestigationRegion, TimeBlock } from '$lib/types/game';
 
 const createLogId = (state: GameState): string => {
   return `${state.clock.totalBlocksElapsed}-${state.log.length + 1}`;
@@ -79,6 +79,10 @@ const deathCauseSuspicionDelta: Record<DeathCause, number> = {
   suicide: 7
 };
 
+const regionBiasOrder: InvestigationRegion[] = ['kanto', 'kansai', 'tohoku', 'kyushu'];
+const regionalSpikePenalty = 3;
+const causeTimeoutBlocks = 2;
+
 const targetAliasPool = [
   'Insider Trading Broker',
   'Counterfeit Passport Runner',
@@ -107,17 +111,155 @@ const buildTargetWave = (wave: number): GameState['investigation']['targets'] =>
   return Array.from({ length: count }, (_, index) => {
     const alias = targetAliasPool[(wave + index - 1) % targetAliasPool.length];
     const trueName = targetNamePool[(wave * 2 + index - 1) % targetNamePool.length];
+    const region = regionBiasOrder[(wave + index - 1) % regionBiasOrder.length];
 
     return {
       id: `wave-${wave}-target-${index + 1}`,
       alias,
       trueName,
+      region,
       knownName: false,
       knownFace: false,
       faceSource: null,
       eliminated: false
     };
   });
+};
+
+const getRecentRegionalEliminations = (state: GameState, region: InvestigationRegion): number => {
+  return state.investigation.eliminationLog
+    .slice(-4)
+    .filter((entry) => entry.region === region)
+    .length;
+};
+
+const applyPendingCauseCountdown = (state: GameState): GameState => {
+  const pendingTargetId = state.flags.pending_cause_target;
+  const pendingBlocks = state.flags.pending_cause_blocks;
+
+  if (typeof pendingTargetId !== 'string' || !pendingTargetId) {
+    return state;
+  }
+
+  if (typeof pendingBlocks !== 'number') {
+    return state;
+  }
+
+  if (pendingBlocks > 0) {
+    const decremented = pendingBlocks - 1;
+    const decrementedState: GameState = {
+      ...state,
+      flags: {
+        ...state.flags,
+        pending_cause_blocks: decremented
+      }
+    };
+
+    if (decremented > 0) {
+      return decrementedState;
+    }
+
+    state = decrementedState;
+  }
+
+  const targetIndex = state.investigation.targets.findIndex((target) => target.id === pendingTargetId);
+  if (targetIndex === -1) {
+    return {
+      ...state,
+      flags: {
+        ...state.flags,
+        pending_cause_target: '',
+        pending_cause_blocks: 0
+      }
+    };
+  }
+
+  const target = state.investigation.targets[targetIndex];
+  if (target.eliminated || !target.knownName || !target.knownFace) {
+    return {
+      ...state,
+      flags: {
+        ...state.flags,
+        pending_cause_target: '',
+        pending_cause_blocks: 0
+      }
+    };
+  }
+
+  const intelCost = deathCauseIntelCost['heart-attack'];
+  const willpowerCost = deathCauseWillpowerCost['heart-attack'];
+
+  if (state.stats.intel < intelCost || state.stats.willpower < willpowerCost || state.inventory.notebookPages <= 0) {
+    return pushLog(
+      {
+        ...state,
+        flags: {
+          ...state.flags,
+          pending_cause_target: '',
+          pending_cause_blocks: 0
+        }
+      },
+      'system',
+      '40-second timer expired, but resources were insufficient for default heart-attack execution.'
+    );
+  }
+
+  const nextTargets = [...state.investigation.targets];
+  nextTargets[targetIndex] = {
+    ...target,
+    eliminated: true
+  };
+
+  const fallbackTargetIndex = nextTargets.findIndex((entry) => !entry.eliminated);
+
+  let next: GameState = {
+    ...state,
+    stats: {
+      ...state.stats,
+      intel: Math.max(0, state.stats.intel - intelCost),
+      morality: clamp(state.stats.morality - deathCauseMoralityCost['heart-attack'], -100, 100),
+      stress: clamp(state.stats.stress + deathCauseStressGain['heart-attack'], 0, 100),
+      willpower: clamp(state.stats.willpower - willpowerCost, 0, 100)
+    },
+    inventory: {
+      ...state.inventory,
+      notebookPages: Math.max(0, state.inventory.notebookPages - 1)
+    },
+    investigation: {
+      ...state.investigation,
+      selectedCause: 'heart-attack',
+      activeTargetIndex: fallbackTargetIndex === -1 ? targetIndex : fallbackTargetIndex,
+      targets: nextTargets,
+      eliminationLog: [
+        ...state.investigation.eliminationLog,
+        {
+          targetId: target.id,
+          alias: target.alias,
+          trueName: target.trueName,
+          region: target.region,
+          cause: 'heart-attack',
+          day: state.clock.day,
+          block: state.clock.block
+        }
+      ]
+    },
+    flags: {
+      ...state.flags,
+      pending_cause_target: '',
+      pending_cause_blocks: 0
+    }
+  };
+
+  next = applySuspicionDelta(next, deathCauseSuspicionDelta['heart-attack'], 'execution_pattern_heart-attack');
+
+  const regionalHits = getRecentRegionalEliminations(next, target.region);
+  if (regionalHits >= 2) {
+    next = applySuspicionDelta(next, regionalSpikePenalty, `regional_cluster_${target.region}`);
+    next = pushLog(next, 'system', `Regional spike in ${target.region.toUpperCase()} raises L's suspicion.`);
+  }
+
+  next = pushLog(next, 'system', `40-second limit elapsed. ${target.trueName} defaults to Heart Attack.`);
+  return next;
 };
 
 const refreshInvestigationWave = (state: GameState): GameState => {
@@ -162,6 +304,7 @@ const advanceTimeStep = (state: GameState, blocks = 1): GameState => {
   next = recalculateSuspicion(next);
   next = evaluateCanonTimeline(next);
   next = refreshInvestigationWave(next);
+  next = applyPendingCauseCountdown(next);
 
   return next;
 };
@@ -341,6 +484,10 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         return state;
       }
 
+      if (state.flags.pending_cause_target) {
+        return pushLog(state, 'system', 'Cause already locked for pending notebook countdown.');
+      }
+
       const next = {
         ...state,
         investigation: {
@@ -350,6 +497,39 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
       };
 
       return pushLog(next, 'system', `Notebook cause set to ${deathCauseLabels[action.cause]}.`);
+    }
+
+    case 'PRIME_JUDGMENT_NAME': {
+      if (state.phase !== 'playing') {
+        return state;
+      }
+
+      const target = state.investigation.targets[state.investigation.activeTargetIndex];
+      if (!target || target.eliminated) {
+        return pushLog(state, 'system', 'No writable target selected.');
+      }
+
+      const normalizedInput = action.enteredName.trim().toLowerCase();
+      const normalizedTargetName = target.trueName.trim().toLowerCase();
+
+      if (normalizedInput !== normalizedTargetName) {
+        return pushLog(state, 'system', 'Name mismatch. Death Note rejects the entry.');
+      }
+
+      if (!target.knownName || !target.knownFace) {
+        return pushLog(state, 'system', 'Cannot prime notebook: true name and face intel are both required.');
+      }
+
+      const next = {
+        ...state,
+        flags: {
+          ...state.flags,
+          pending_cause_target: target.id,
+          pending_cause_blocks: causeTimeoutBlocks
+        }
+      };
+
+      return pushLog(next, 'system', 'Name entered. 40-second cause window started.');
     }
 
     case 'INVESTIGATE_TARGET_NAME': {
@@ -524,6 +704,7 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
         },
         investigation: {
           ...next.investigation,
+          selectedCause: 'heart-attack',
           activeTargetIndex: fallbackTargetIndex === -1 ? targetIndex : fallbackTargetIndex,
           targets: nextTargets,
           eliminationLog: [
@@ -532,15 +713,28 @@ export const gameReducer = (state: GameState, action: GameAction): GameState => 
               targetId: target.id,
               alias: target.alias,
               trueName: target.trueName,
+              region: target.region,
               cause,
               day: state.clock.day,
               block: state.clock.block
             }
           ]
+        },
+        flags: {
+          ...next.flags,
+          pending_cause_target: '',
+          pending_cause_blocks: 0
         }
       };
 
       next = applySuspicionDelta(next, deathCauseSuspicionDelta[cause], `execution_pattern_${cause}`);
+
+      const regionalHits = getRecentRegionalEliminations(next, target.region);
+      if (regionalHits >= 2) {
+        next = applySuspicionDelta(next, regionalSpikePenalty, `regional_cluster_${target.region}`);
+        next = pushLog(next, 'system', `Regional spike in ${target.region.toUpperCase()} raises L's suspicion.`);
+      }
+
       next = pushLog(next, 'action', `Judgment written: ${target.trueName} (${deathCauseLabels[cause]}).`);
 
       if (next.investigation.targets.every((entry) => entry.eliminated)) {

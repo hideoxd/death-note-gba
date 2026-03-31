@@ -111,7 +111,12 @@
     },
     "investigation": {
       "type": "object",
-      "required": ["activeTargetIndex", "selectedCause", "targets", "eliminationLog"],
+      "required": [
+        "activeTargetIndex",
+        "selectedCause",
+        "targets",
+        "eliminationLog"
+      ],
       "properties": {
         "activeTargetIndex": { "type": "integer", "minimum": 0 },
         "selectedCause": {
@@ -126,6 +131,7 @@
               "id",
               "alias",
               "trueName",
+              "region",
               "knownName",
               "knownFace",
               "faceSource",
@@ -135,6 +141,7 @@
               "id": { "type": "string" },
               "alias": { "type": "string" },
               "trueName": { "type": "string" },
+              "region": { "type": "string", "enum": ["kanto", "kansai", "tohoku", "kyushu"] },
               "knownName": { "type": "boolean" },
               "knownFace": { "type": "boolean" },
               "faceSource": {
@@ -155,6 +162,7 @@
               "targetId": { "type": "string" },
               "alias": { "type": "string" },
               "trueName": { "type": "string" },
+              "region": { "type": "string", "enum": ["kanto", "kansai", "tohoku", "kyushu"] },
               "cause": {
                 "type": "string",
                 "enum": ["heart-attack", "accident", "poisoning", "suicide"]

@@ -4,12 +4,13 @@
   import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
 
-  import GBAFrame from '$lib/components/shell/GBAFrame.svelte';
-  import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
+import GBAFrame from '$lib/components/shell/GBAFrame.svelte';
+import GBAScreen from '$lib/components/shell/GBAScreen.svelte';
 
   import TopBar from '$lib/components/hud/TopBar.svelte';
   import CanonTimelineBar from '$lib/components/hud/CanonTimelineBar.svelte';
   import WorldTicker from '$lib/components/hud/WorldTicker.svelte';
+  import PatternTerminal from '$lib/components/hud/PatternTerminal.svelte';
   import TimeBlockPanel from '$lib/components/hud/TimeBlockPanel.svelte';
   import StatPanel from '$lib/components/hud/StatPanel.svelte';
   import SuspicionMeter from '$lib/components/hud/SuspicionMeter.svelte';
@@ -22,12 +23,15 @@
   import PauseMenu from '$lib/components/system/PauseMenu.svelte';
   import GameOverModal from '$lib/components/system/GameOverModal.svelte';
   import LogPanel from '$lib/components/system/LogPanel.svelte';
+  import RulebookOverlay from '$lib/components/system/RulebookOverlay.svelte';
+  import StartupOverlay from '$lib/components/system/StartupOverlay.svelte';
 
   import { gameState } from '$lib/stores/gameState';
   import { uiState } from '$lib/stores/uiState';
-  import { isGameOver, phase } from '$lib/stores/selectors';
+  import { dualModeView, isGameOver, phase } from '$lib/stores/selectors';
 
   let redirectingToTitle = false;
+  let showRulebook = false;
 
   $: if (browser && $phase === 'title' && !redirectingToTitle) {
     redirectingToTitle = true;
@@ -51,7 +55,17 @@
   };
 
   const triggerSelect = () => {
-    uiState.toggleLogPanel();
+    if ($gameState.phase === 'paused') {
+      showRulebook = !showRulebook;
+      return;
+    }
+
+    const nextMode = $dualModeView === 'kira' ? 'l' : 'kira';
+    gameState.dispatch({ type: 'APPLY_EFFECTS', effects: [{ type: 'flag.set', key: 'dual_mode', value: nextMode }] });
+  };
+
+  const closeRulebook = () => {
+    showRulebook = false;
   };
 
   onMount(() => {
@@ -78,7 +92,16 @@
     };
 
     window.addEventListener('keydown', onKeyDown);
+
+    const body = document.body;
+    const unsubscribe = gameState.subscribe((state) => {
+      body.classList.toggle('phase-l-alert', state.suspicion.meter >= 60 && state.suspicion.meter < 85);
+      body.classList.toggle('phase-l-critical', state.suspicion.meter >= 85);
+    });
+
     return () => {
+      unsubscribe();
+      document.body.classList.remove('phase-l-alert', 'phase-l-critical');
       window.removeEventListener('keydown', onKeyDown);
     };
   });
@@ -103,6 +126,9 @@
             <StatPanel />
             <SuspicionMeter />
             <IntelDesk />
+            {#if $dualModeView === 'l'}
+              <PatternTerminal />
+            {/if}
             <CanonTracker />
             {#if $uiState.showLogPanel}
               <div in:fade={{ duration: 120 }} out:fade={{ duration: 90 }}>
@@ -117,11 +143,14 @@
 
         {#if $gameState.phase === 'paused'}
           <PauseMenu />
+          <RulebookOverlay open={showRulebook} onClose={closeRulebook} />
         {/if}
 
         {#if $isGameOver}
           <GameOverModal />
         {/if}
+
+        <StartupOverlay />
       </section>
     </GBAScreen>
   </GBAFrame>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { SUSPICION_RULES } from '$lib/data';
   import { gameState } from '$lib/stores/gameState';
+  import { suspenseMeterMotion } from '$lib/stores/suspicionMotion';
   import { suspicionPercent, suspicionTrend } from '$lib/stores/selectors';
 
   $: tone =
@@ -18,6 +19,8 @@
         : $suspicionPercent >= SUSPICION_RULES.thresholds.watchlist
           ? 'WATCH'
           : 'LOW';
+
+  $: meterWidth = Math.max(0, Math.min(100, Math.round($suspenseMeterMotion)));
 </script>
 
 <section class="panel {tone}">
@@ -27,7 +30,7 @@
   </div>
 
   <div class="meter-shell">
-    <div class="meter-fill {tone}" style="width:{$suspicionPercent}%;"></div>
+    <div class="meter-fill {tone}" style="width:{meterWidth}%;"></div>
   </div>
 
   <span class="tier">{tier}</span>
@@ -49,6 +52,24 @@
   .panel.critical {
     border-color: rgba(255, 0, 0, 0.4);
     animation: danger-pulse 1.5s ease-in-out infinite;
+    filter: saturate(1.2) brightness(1.05);
+  }
+
+  .panel.high {
+    animation: danger-pulse-soft 850ms ease-in-out infinite;
+  }
+
+  @keyframes danger-pulse-soft {
+    0%,
+    100% {
+      transform: translateX(0);
+    }
+    25% {
+      transform: translateX(-0.4px);
+    }
+    75% {
+      transform: translateX(0.4px);
+    }
   }
 
   @keyframes danger-pulse {

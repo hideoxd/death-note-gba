@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEventDispatcher } from 'svelte';
+  import { playNotebookScribble, playTextBlip } from '$lib/utils/sfx';
 
   export let title = 'Death Note: Kira Protocol';
 
@@ -9,11 +10,17 @@
   }>();
 
   const triggerStart = () => {
+    playTextBlip();
     dispatch('start');
   };
 
   const triggerSelect = () => {
+    playTextBlip();
     dispatch('select');
+  };
+
+  const clickPlastic = () => {
+    playNotebookScribble();
   };
 </script>
 
@@ -21,9 +28,9 @@
   <div class="shell-body">
     <!-- Left controls -->
     <div class="dpad-area">
-      <div class="dpad">
-        <div class="dpad-v"></div>
-        <div class="dpad-h"></div>
+      <div class="dpad" role="group" aria-label="D-Pad">
+        <button type="button" class="dpad-v" aria-label="D-Pad vertical" on:click={clickPlastic}></button>
+        <button type="button" class="dpad-h" aria-label="D-Pad horizontal" on:click={clickPlastic}></button>
         <div class="dpad-center"></div>
       </div>
     </div>
@@ -42,8 +49,8 @@
     <!-- Right controls -->
     <div class="buttons-area">
       <div class="action-buttons">
-        <div class="button b-btn"><span>B</span></div>
-        <div class="button a-btn"><span>A</span></div>
+        <button type="button" class="button b-btn" aria-label="B button" on:click={clickPlastic}><span>B</span></button>
+        <button type="button" class="button a-btn" aria-label="A button" on:click={clickPlastic}><span>A</span></button>
       </div>
       <div class="start-select">
         <button
@@ -203,6 +210,14 @@
       0 2px 4px rgba(0, 0, 0, 0.4);
     border-radius: 3px;
     border: 1px solid rgba(50, 50, 65, 0.4);
+    cursor: pointer;
+    padding: 0;
+  }
+
+  .dpad-v:active,
+  .dpad-h:active,
+  .button:active {
+    transform: scale(0.95);
   }
 
   .dpad-v {
@@ -262,6 +277,8 @@
     align-items: center;
     border: 1px solid rgba(180, 60, 60, 0.4);
     cursor: pointer;
+    appearance: none;
+    padding: 0;
   }
 
   .button span {

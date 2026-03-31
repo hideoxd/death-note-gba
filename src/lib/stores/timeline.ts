@@ -48,6 +48,35 @@ export const worldTimeline = derived(gameState, ($state): TimelineEntry[] => {
     tone: unresolvedTargets <= 1 ? 'urgent' : 'neutral'
   });
 
+  if (latestElimination) {
+    const regionalStreak = eliminationLog
+      .slice(-4)
+      .filter((entry) => entry.region === latestElimination.region)
+      .length;
+
+    if (regionalStreak >= 2) {
+    entries.push({
+      id: 'timeline-region-alert',
+      headline: `${latestElimination.region.toUpperCase()} Alert`,
+      detail: 'Clustered deaths in one region trigger focused geo-profiling by L.',
+      tone: 'critical'
+    });
+  }
+
+  if (
+    typeof $state.flags.pending_cause_target === 'string' &&
+    $state.flags.pending_cause_target &&
+    typeof $state.flags.pending_cause_blocks === 'number'
+  ) {
+    entries.push({
+      id: 'timeline-cause-window',
+      headline: 'Death Note Rule III',
+      detail: `Cause override window active: ${Math.max(0, $state.flags.pending_cause_blocks)} block(s) before default heart attack.`,
+      tone: 'urgent'
+    });
+  }
+  }
+
   entries.push({
     id: 'timeline-suspicion',
     headline: 'L Monitor',

@@ -2,6 +2,7 @@
   import { fade, fly } from 'svelte/transition';
 
   import { gameState } from '$lib/stores/gameState';
+  import { dualModeView, pendingCauseCountdown } from '$lib/stores/selectors';
   import { playNotebookScribble } from '$lib/utils/sfx';
 
   import type { DeathCause } from '$lib/types/game';
@@ -22,6 +23,7 @@
   ];
 
   let deskMode: DeskMode = 'investigation';
+  let notebookNameInput = '';
 
   $: targets = $gameState.investigation.targets;
   $: targetCount = targets.length;
@@ -67,6 +69,16 @@
     return 'Ready.';
   })();
 
+  $: countdownActive = $pendingCauseCountdown && activeTarget?.id === $pendingCauseCountdown.targetId;
+  $: canPrimeName = Boolean(
+    activeTarget &&
+      !activeTarget.eliminated &&
+      activeTarget.knownName &&
+      activeTarget.knownFace &&
+      !countdownActive &&
+      notebookNameInput.trim().length > 0
+  );
+
   const shiftTarget = (delta: number) => {
     if (targetCount <= 0) return;
     const next = (activeIndex + delta + targetCount) % targetCount;
@@ -74,6 +86,7 @@
   };
 
   const setCause = (cause: DeathCause) => {
+    if (countdownActive) return;
     gameState.setJudgmentCause(cause);
   };
 
@@ -93,16 +106,22 @@
     playNotebookScribble();
     gameState.writeJudgment();
   };
+
+  const primeName = () => {
+    if (!canPrimeName) return;
+    gameState.primeJudgmentName(notebookNameInput);
+  };
 </script>
 
 <section class="intel-desk">
-  <h3>⌖ NOTE</h3>
+  <h3>⌖ {$dualModeView === 'l' ? 'L MODE' : 'NOTE'}</h3>
 
-  <div class="mode-tabs">
-    <button
-      type="button"
-      class:active={deskMode === 'investigation'}
-      on:click={() => (deskMode = 'investigation')}
+  {#if $dualModeView !== 'l'}
+    <div class="mode-tabs">
+      <button
+        type="button"
+        class:active={deskMode === 'investigation'}
+        on:click={() => (deskMode = 'investigation')}
     >
       INV
     </button>
@@ -110,12 +129,13 @@
       type="button"
       class:active={deskMode === 'writing'}
       on:click={() => (deskMode = 'writing')}
-    >
-      WRITE
-    </button>
-  </div>
+      >
+        WRITE
+      </button>
+    </div>
+  {/if}
 
-  {#if activeTarget}
+  {#if activeTarget && $dualModeView !== 'l'}
     <div class="target-row">
       <button type="button" class="mini" on:click={() => shiftTarget(-1)} disabled={targetCount <= 1}>◂</button>
 
@@ -134,7 +154,12 @@
     </div>
   {/if}
 
-  {#if deskMode === 'investigation'}
+  {#if $dualModeView === 'l'}
+    <div class="pane">
+      <p class="hint">Use SELECT to swap Kira/L perspectives.</p>
+      <p class="lock">L mode: monitor timing clusters and regional spikes.</p>
+    </div>
+  {:else if deskMode === 'investigation'}
     <div class="pane" in:fly={{ y: 2, duration: 120 }} out:fade={{ duration: 90 }}>
       <div class="actions inv-grid">
         <button type="button" on:click={investigateName} disabled={!canInvestigateName}>Name</button>
@@ -162,11 +187,25 @@
             class:selected={cause.id === selectedCause}
             title={cause.label}
             on:click={() => setCause(cause.id)}
+            disabled={Boolean(countdownActive)}
           >
             {cause.short}
           </button>
         {/each}
       </div>
+      <div class="name-row">
+        <input
+          type="text"
+          value={notebookNameInput}
+          on:input={(event) => (notebookNameInput = (event.currentTarget as HTMLInputElement).value)}
+          placeholder="True name"
+          disabled={Boolean(countdownActive)}
+        />
+        <button type="button" class="prime" on:click={primeName} disabled={!canPrimeName}>INK</button>
+      </div>
+      {#if countdownActive}
+        <p class="timer">40s window: {$pendingCauseCountdown?.blocksRemaining ?? 0} block(s) left</p>
+      {/if}
       <p class="cost">Intel {causeSpec.intel} | Will {causeSpec.willpower}</p>
       <button type="button" class="judgment" on:click={writeJudgment} disabled={!canWriteJudgment}>WRITE</button>
       <p class="lock">{notebookBlockReason}</p>
@@ -327,6 +366,60 @@
     font-size: 4px;
     color: #a78e68;
     font-family: var(--font-pixel, monospace);
+  }
+
+  .timer {
+    margin: 0;
+    font-size: 4px;
+    color: #d27a7a;
+    font-family: var(--font-pixel, monospace);
+    letter-spacing: 0.2px;
+    text-transform: uppercase;
+    animation: timer-pulse 420ms steps(2, end) infinite;
+  }
+
+  .name-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 18px;
+    gap: 1px;
+  }
+
+  .name-row input {
+    min-width: 0;
+    border: 1px solid rgba(190, 160, 110, 0.26);
+    background: rgba(24, 18, 10, 0.9);
+    color: #dac497;
+    padding: 1px 2px;
+    font-size: 4px;
+    font-family: var(--font-vt, monospace);
+    text-transform: uppercase;
+    letter-spacing: 0.15px;
+    text-shadow: 0 0 3px rgba(218, 196, 151, 0.2);
+  }
+
+  .name-row input::placeholder {
+    color: #8f7b57;
+  }
+
+  .prime {
+    border: 1px solid rgba(196, 164, 74, 0.24);
+    background: linear-gradient(180deg, rgba(28, 22, 11, 0.95) 0%, rgba(14, 11, 6, 0.95) 100%);
+    color: #b8a471;
+    padding: 1px 2px;
+    font-size: 4px;
+    font-family: var(--font-pixel, monospace);
+    cursor: pointer;
+  }
+
+  @keyframes timer-pulse {
+    0%,
+    49% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0.5;
+    }
   }
 
   .judgment {

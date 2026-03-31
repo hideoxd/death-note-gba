@@ -123,3 +123,22 @@ export const playNotebookScribble = (): void => {
     }, i * 24);
   }
 };
+
+export const playGlitchBoot = (): void => {
+  const level = getSfxGain();
+  if (level <= 0) {
+    return;
+  }
+
+  const sequence = [220, 310, 440, 370, 520];
+  for (let i = 0; i < sequence.length; i += 1) {
+    window.setTimeout(() => {
+      playTone({
+        frequency: sequence[i],
+        durationMs: 45,
+        type: i % 2 === 0 ? 'square' : 'triangle',
+        gain: 0.028 * level
+      });
+    }, i * 52);
+  }
+};

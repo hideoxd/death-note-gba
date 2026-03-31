@@ -1,12 +1,15 @@
 import { CANON_MILESTONES, DEFAULT_TREE_BY_MODE, DIALOGUE_TREES } from '$lib/data';
 import { createInitialSuspicionBreakdown } from '$lib/engine/suspicion';
-import type { GameMode, GameState, Phase } from '$lib/types/game';
+import type { GameMode, GameState, InvestigationRegion, Phase } from '$lib/types/game';
+
+const regionByIndex: InvestigationRegion[] = ['kanto', 'kansai', 'tohoku', 'kyushu'];
 
 const investigationTargetSeed: GameState['investigation']['targets'] = [
   {
     id: 'target-01',
     alias: 'Bus Hijacker Suspect',
     trueName: 'Daiki Hamura',
+    region: regionByIndex[0],
     knownName: false,
     knownFace: false,
     faceSource: null,
@@ -16,6 +19,7 @@ const investigationTargetSeed: GameState['investigation']['targets'] = [
     id: 'target-02',
     alias: 'Corporate Bribe Broker',
     trueName: 'Kenta Moroboshi',
+    region: regionByIndex[1],
     knownName: false,
     knownFace: false,
     faceSource: null,
@@ -25,6 +29,7 @@ const investigationTargetSeed: GameState['investigation']['targets'] = [
     id: 'target-03',
     alias: 'Serial Extortion Caller',
     trueName: 'Riku Kasahara',
+    region: regionByIndex[2],
     knownName: false,
     knownFace: false,
     faceSource: null,
@@ -34,6 +39,7 @@ const investigationTargetSeed: GameState['investigation']['targets'] = [
     id: 'target-04',
     alias: 'Arson Ring Planner',
     trueName: 'Shota Mikuni',
+    region: regionByIndex[3],
     knownName: false,
     knownFace: false,
     faceSource: null,
@@ -72,6 +78,7 @@ const defaultFlags = {
   yellow_box_triggered: false,
   light_dead: false,
   investigation_wave: 1,
+  dual_mode: 'kira',
   divergent_ch2_started: false,
   divergent_ch2_complete: false,
   false_channels: false,

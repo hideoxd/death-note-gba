@@ -274,6 +274,12 @@ export const gameplayHint = derived(gameState, ($state) => {
 
   const activeTarget = $state.investigation.targets[$state.investigation.activeTargetIndex];
   if (activeTarget && !activeTarget.eliminated) {
+    if (typeof $state.flags.pending_cause_target === 'string' && $state.flags.pending_cause_target === activeTarget.id) {
+      const blocksLeft =
+        typeof $state.flags.pending_cause_blocks === 'number' ? Math.max(0, $state.flags.pending_cause_blocks) : 0;
+      return `Cause countdown active: ${blocksLeft} block(s) until default heart attack.`;
+    }
+
     if (!activeTarget.knownName) {
       return `Investigation: trace the true name for ${activeTarget.alias} from police data.`;
     }
@@ -392,6 +398,65 @@ export const canContinueFromCurrentNode = derived(gameState, ($state) => {
   if (node.choices && node.choices.length > 0) return false;
 
   return $state.phase === 'playing';
+});
+
+export const pendingCauseCountdown = derived(gameState, ($state) => {
+  const pendingTargetId = $state.flags.pending_cause_target;
+  const blocksRemaining = $state.flags.pending_cause_blocks;
+
+  if (typeof pendingTargetId !== 'string' || !pendingTargetId) {
+    return null;
+  }
+
+  const target = $state.investigation.targets.find((entry) => entry.id === pendingTargetId);
+  if (!target || target.eliminated) {
+    return null;
+  }
+
+  return {
+    targetId: pendingTargetId,
+    alias: target.alias,
+    region: target.region,
+    blocksRemaining: typeof blocksRemaining === 'number' ? Math.max(0, blocksRemaining) : 0,
+    willDefaultTo: 'heart-attack' as const
+  };
+});
+
+export const patternData = derived(gameState, ($state) => {
+  const entries = $state.investigation.eliminationLog;
+  const byBlock: Record<TimeBlock, number> = {
+    morning: 0,
+    afternoon: 0,
+    night: 0
+  };
+
+  const byRegion: Record<'kanto' | 'kansai' | 'tohoku' | 'kyushu', number> = {
+    kanto: 0,
+    kansai: 0,
+    tohoku: 0,
+    kyushu: 0
+  };
+
+  for (const entry of entries) {
+    byBlock[entry.block] += 1;
+    byRegion[entry.region] += 1;
+  }
+
+  return {
+    total: entries.length,
+    byBlock,
+    byRegion,
+    dominantBlock: (Object.entries(byBlock).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'morning') as TimeBlock,
+    dominantRegion: (Object.entries(byRegion).sort((a, b) => b[1] - a[1])[0]?.[0] ?? 'kanto') as
+      | 'kanto'
+      | 'kansai'
+      | 'tohoku'
+      | 'kyushu'
+  };
+});
+
+export const dualModeView = derived(gameState, ($state) => {
+  return $state.flags.dual_mode === 'l' ? 'l' : 'kira';
 });
 
 export const unreachableCurrentNode = derived(gameState, ($state) => {

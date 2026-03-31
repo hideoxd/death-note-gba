@@ -3,6 +3,7 @@ export type TimeBlock = 'morning' | 'afternoon' | 'night';
 export type Phase = 'title' | 'playing' | 'paused' | 'ending' | 'game-over';
 export type DeathCause = 'heart-attack' | 'accident' | 'poisoning' | 'suicide';
 export type FaceIntelSource = 'news-clip' | 'social-feed' | null;
+export type InvestigationRegion = 'kanto' | 'kansai' | 'tohoku' | 'kyushu';
 
 export interface GameClock {
   day: number;
@@ -25,6 +26,7 @@ export interface InvestigationTarget {
   id: string;
   alias: string;
   trueName: string;
+  region: InvestigationRegion;
   knownName: boolean;
   knownFace: boolean;
   faceSource: FaceIntelSource;
@@ -35,6 +37,7 @@ export interface EliminationRecord {
   targetId: string;
   alias: string;
   trueName: string;
+  region: InvestigationRegion;
   cause: DeathCause;
   day: number;
   block: TimeBlock;

@@ -79,9 +79,46 @@ body::before {
   animation: bg-pulse 8s ease-in-out infinite alternate;
 }
 
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      rgba(60, 120, 170, 0.06) 0 1px,
+      transparent 1px 3px
+    ),
+    radial-gradient(ellipse at 78% 18%, rgba(68, 110, 160, 0.24) 0%, transparent 60%);
+  transition: opacity 500ms ease;
+}
+
+body.phase-l-alert::after {
+  opacity: 1;
+}
+
+body.phase-l-critical::after {
+  opacity: 1;
+  animation: hq-flicker 340ms steps(2, end) infinite;
+}
+
 @keyframes bg-pulse {
   0% { opacity: 0.8; }
   100% { opacity: 1; }
+}
+
+@keyframes hq-flicker {
+  0%,
+  45%,
+  100% {
+    filter: hue-rotate(0deg) saturate(1);
+  }
+  50% {
+    filter: hue-rotate(6deg) saturate(1.25);
+  }
 }
 
 button,
